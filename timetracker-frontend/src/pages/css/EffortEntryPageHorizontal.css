@@ -63,7 +63,14 @@
   gap: 10px;
   margin-bottom: 15px;
 }
-
+.left-actions{
+    display: "flex";
+     gap: "10px";
+}
+.right-actions{
+    display: "flex";
+     gap: "10px";
+}
 .btn {
   border: none;
   border-radius: 6px;
@@ -75,12 +82,12 @@
 }
 
 .add-btn {
-  background-color: #004aad;
+  background-color: #28a745;
   color: white;
 }
 
 .add-btn:hover {
-  background-color: #003a88;
+  background-color: #218838;
 }
 
 .save-btn {

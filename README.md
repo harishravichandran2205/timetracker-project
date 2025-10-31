@@ -1,6 +1,6 @@
 # TimeTracker Project
 
-A full-stack application for time tracking with a **React frontend** and **Spring Boot backend**.
+A App **React frontend** and **Spring Boot backend**.
 
 ---
 
@@ -32,15 +32,19 @@ Before running the project, make sure the following software is installed:
 ### 1️⃣ Clone the Repository
 git clone https://github.com/harishravichandran2205/timetracker-project.git
 
+## Database Setup
+The database configuration is defined in `src/main/resources/application.properties`.
 
---------------Run Backend (Spring Boot)----------------------	
+## Run Backend (Spring Boot)
+
 	*Run → Edit Configurations
 	*Click + → Application.
 	*Set Name
 	*Set: Main class: com.ogon.timetracker.TimeTrackerApplication
 
 
-----------------Run Frontend (React)-----------------
+## Run Frontend (React)
+
 	*cd ../timetracker-frontend
 	*npm install                          # Install all project dependencies
 	*npm install react-router-dom 

@@ -39,7 +39,7 @@ public class TaskController {
                     && dto.getDescription() != null && !dto.getDescription().isEmpty()
                     && dto.getBillable() != null && !dto.getBillable().isEmpty()
                     && dto.getDate() != null && !dto.getDate().isEmpty()
-                     && dto.getTicketDescription() !=null && !dto.getTicketDescription().isEmpty() ) {
+                    && dto.getTicketDescription() !=null && !dto.getTicketDescription().isEmpty() ) {
 
                 TaskEntity entity = TaskEntity.builder()
                         .email(dto.getEmail())
@@ -63,6 +63,76 @@ public class TaskController {
             return ResponseEntity
                     .badRequest()
                     .body(Map.of("error", "No tasks to save. All fields are required."));
+        }
+
+        taskRepository.saveAll(validTasks);
+
+        return ResponseEntity.ok(Map.of(
+                "message", validTasks.size() + " task(s) saved successfully!"
+        ));
+    }
+    @PostMapping("/tasks-new")
+    public ResponseEntity<Map<String, String>> saveTasksNew(@RequestBody List<Map<String, Object>> tasks) {
+        if (tasks == null || tasks.isEmpty()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", "Task list cannot be empty"));
+        }
+
+        List<TaskEntity> validTasks = new ArrayList<>();
+
+        for (Map<String, Object> dto : tasks) {
+            String email = (String) dto.get("email");
+            String firstName = (String) dto.get("firstName");
+            String lastName = (String) dto.get("lastName");
+            String client = (String) dto.get("client");
+            String ticket = (String) dto.get("ticket");
+            String category = (String) dto.get("category");
+            String description = (String) dto.get("description");
+            String billable = (String) dto.get("billable");
+            String ticketDescription = (String) dto.get("ticketDescription");
+
+            // ✅ Extract hoursByDate map safely
+            Map<String, Object> hoursByDate = (Map<String, Object>) dto.get("hoursByDate");
+
+            if (hoursByDate != null && !hoursByDate.isEmpty()) {
+                for (Map.Entry<String, Object> entry : hoursByDate.entrySet()) {
+                    String date = entry.getKey();
+                    Object hoursObj = entry.getValue();
+
+                    if (hoursObj == null || hoursObj.toString().isBlank()) continue;
+
+                    double hours;
+                    try {
+                        hours = Double.parseDouble(hoursObj.toString());
+                    } catch (NumberFormatException e) {
+                        continue; // Skip invalid hours
+                    }
+
+                    // ✅ Create one TaskEntity per date entry
+                    TaskEntity entity = TaskEntity.builder()
+                            .email(email)
+                            .firstName(firstName)
+                            .lastName(lastName)
+                            .client(client != null ? client.toUpperCase() : null)
+                            .ticket(ticket)
+                            .ticketDescription(ticketDescription)
+                            .category(category)
+                            .description(description)
+                            .billable(billable)
+                            .hours(hours)
+                            .date(date) // "dd-MM-yyyy" format from frontend
+                            .build();
+
+                    validTasks.add(entity);
+                }
+            }
+        }
+
+        if (validTasks.isEmpty()) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", "No valid tasks found. Please check input data."));
         }
 
         taskRepository.saveAll(validTasks);
@@ -162,33 +232,33 @@ public class TaskController {
         }
         else {
 
-        // Update fields from DTO
-        task.setClient(taskDTO.getClient().toUpperCase());
-        task.setTicket(taskDTO.getTicket());
-        task.setTicketDescription(taskDTO.getTicketDescription());
-        task.setCategory(taskDTO.getCategory());
-        task.setDescription(taskDTO.getDescription());
-        task.setBillable(taskDTO.getBillable());
-        task.setHours(taskDTO.getHours());
-        task.setDate(taskDTO.getDate());
+            // Update fields from DTO
+            task.setClient(taskDTO.getClient().toUpperCase());
+            task.setTicket(taskDTO.getTicket());
+            task.setTicketDescription(taskDTO.getTicketDescription());
+            task.setCategory(taskDTO.getCategory());
+            task.setDescription(taskDTO.getDescription());
+            task.setBillable(taskDTO.getBillable());
+            task.setHours(taskDTO.getHours());
+            task.setDate(taskDTO.getDate());
 
-        // Save updated task
-        TaskEntity updatedTask = taskRepository.save(task);
+            // Save updated task
+            TaskEntity updatedTask = taskRepository.save(task);
 
-        // Convert to DTO to return
-        TaskDTO updatedDTO = TaskDTO.builder()
-                .id(updatedTask.getId())
-                .client(updatedTask.getClient())
-                .ticket(updatedTask.getTicket())
-                .ticketDescription(updatedTask.getTicketDescription())
-                .category(updatedTask.getCategory())
-                .description(updatedTask.getDescription())
-                .billable(updatedTask.getBillable())
-                .hours(updatedTask.getHours())
-                .date(updatedTask.getDate())
-                .build();
+            // Convert to DTO to return
+            TaskDTO updatedDTO = TaskDTO.builder()
+                    .id(updatedTask.getId())
+                    .client(updatedTask.getClient())
+                    .ticket(updatedTask.getTicket())
+                    .ticketDescription(updatedTask.getTicketDescription())
+                    .category(updatedTask.getCategory())
+                    .description(updatedTask.getDescription())
+                    .billable(updatedTask.getBillable())
+                    .hours(updatedTask.getHours())
+                    .date(updatedTask.getDate())
+                    .build();
 
-        return ResponseEntity.ok(Map.of("data", updatedDTO));}
+            return ResponseEntity.ok(Map.of("data", updatedDTO));}
     }
 }
 
