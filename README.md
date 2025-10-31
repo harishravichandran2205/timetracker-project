@@ -1,6 +1,6 @@
 # TimeTracker Project
 
-A full-stack application for time tracking with a **React frontend** and **Spring Boot backend**.
+A App for time tracking with a **React frontend** and **Spring Boot backend**.
 
 ---
 
