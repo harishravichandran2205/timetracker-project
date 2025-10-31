@@ -32,6 +32,8 @@ Before running the project, make sure the following software is installed:
 ### 1️⃣ Clone the Repository
 git clone https://github.com/harishravichandran2205/timetracker-project.git
 
+## Database Setup
+The database configuration is defined in `src/main/resources/application.properties`.
 
 --------------Run Backend (Spring Boot)----------------------	
 
