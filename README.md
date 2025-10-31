@@ -1,6 +1,6 @@
 # TimeTracker Project
 
-A full-stack application for time tracking with a **React frontend** and **Spring Boot backend**.
+A App **React frontend** and **Spring Boot backend**.
 
 ---
 
@@ -34,6 +34,7 @@ git clone https://github.com/harishravichandran2205/timetracker-project.git
 
 
 --------------Run Backend (Spring Boot)----------------------	
+
 	*Run → Edit Configurations
 	*Click + → Application.
 	*Set Name
@@ -41,6 +42,7 @@ git clone https://github.com/harishravichandran2205/timetracker-project.git
 
 
 ----------------Run Frontend (React)-----------------
+
 	*cd ../timetracker-frontend
 	*npm install                          # Install all project dependencies
 	*npm install react-router-dom 
