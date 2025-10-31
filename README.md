@@ -35,7 +35,7 @@ git clone https://github.com/harishravichandran2205/timetracker-project.git
 ## Database Setup
 The database configuration is defined in `src/main/resources/application.properties`.
 
---------------Run Backend (Spring Boot)----------------------	
+## Run Backend (Spring Boot)
 
 	*Run → Edit Configurations
 	*Click + → Application.
@@ -43,7 +43,7 @@ The database configuration is defined in `src/main/resources/application.propert
 	*Set: Main class: com.ogon.timetracker.TimeTrackerApplication
 
 
-----------------Run Frontend (React)-----------------
+## Run Frontend (React)
 
 	*cd ../timetracker-frontend
 	*npm install                          # Install all project dependencies
