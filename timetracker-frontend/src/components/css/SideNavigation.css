@@ -1,0 +1,59 @@
+/* ===== SIDE NAVIGATION ===== */
+.side-nav {
+  width: 80px; /* width for icons and text */
+  background-color: #004aad;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 60px; /* adjust for header */
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 !important;     /* force smaller gap */
+  padding: 10px 0 !important;    /* force less inner space */
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-icon {
+  font-size: 24px;
+}
+
+.nav-label {
+  font-size: 0.75rem;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* ===== MAIN SECTION ===== */
+.main-section {
+  display: flex;
+  flex: 1;
+  margin-top: 60px; /* offset for topbar */
+  margin-left: 80px; /* equal to sidebar width */
+}
+
+/* ===== PAGE CONTENT ===== */
+.page-content {
+  flex: 1;
+  padding: 25px 25px 25px 10px; /* top, right, bottom, left */
+  min-height: calc(100vh - 60px);
+  box-sizing: border-box;
+  background-color: #f8f9fb;
+  overflow-x: auto;
+}

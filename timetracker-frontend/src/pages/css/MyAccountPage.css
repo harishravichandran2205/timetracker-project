@@ -1,0 +1,91 @@
+.page-title {
+  color: #004aad;
+  margin-bottom: 20px;
+}
+
+.account-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 25px 30px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.account-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-family: "Poppins", sans-serif;
+}
+
+.account-row label {
+  color: #555;
+  font-weight: 600;
+}
+
+.account-row span {
+  color: #222;
+}
+
+.error-message {
+  color: red;
+  font-weight: bold;
+}
+
+
+/* OTP & Change Password Section */
+.otp-section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: "Poppins", sans-serif;
+}
+
+.otp-section label {
+  font-weight: 600;
+  color: #555;
+}
+
+.otp-section input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.otp-section p {
+  color: #004aad;
+  font-weight: 500;
+}
+
+.btn.change-password-btn,
+.btn.save-password-btn {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background-color: #004aad;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn.change-password-btn:hover,
+.btn.save-password-btn:hover {
+  background-color: #003380;
+}
+
+.success-message {
+  margin-top: 15px;
+  color: green;
+  font-weight: 600;
+}
+
+.error-message {
+  margin-top: 15px;
+  color: red;
+  font-weight: 600;
+}

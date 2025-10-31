@@ -1,0 +1,83 @@
+/* ===== EFFORT TABLE CONTAINER ===== */
+.effort-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ===== TABLE HEAD ===== */
+.effort-table th {
+  background-color: #004aad;
+  color: #fff;
+  font-weight: 600;
+  padding: 10px;
+  text-align: left;
+}
+
+/* ===== TABLE BODY ===== */
+.effort-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  vertical-align: middle;
+}
+
+/* ===== STRIPED ROWS ===== */
+.effort-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.effort-table tr:hover {
+  background-color: #e8f0ff;
+}
+
+/* ===== INPUTS & SELECTS ===== */
+.effort-table input,
+.effort-table select {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* ===== DELETE BUTTON ===== */
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+/* ===== RESPONSIVE ===== */
+@media screen and (max-width: 768px) {
+  .effort-table th,
+  .effort-table td {
+    padding: 6px 4px;
+  }
+
+  .delete-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+.unsaved-modal .confirm-btn {
+  background-color: blue;
+  color: white;
+}
+
+.unsaved-modal .cancel-btn {
+  background-color: red;
+  color: white;
+}

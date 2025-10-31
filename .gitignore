@@ -1,0 +1,22 @@
+# ===== Global =====
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+# ===== Backend (Spring Boot / Maven) =====
+timetracker-backend/target/
+timetracker-backend/.mvn/wrapper/maven-gitwrapper.jar
+timetracker-backend/help.md
+# ===== Frontend (React / Node) =====
+timetracker-frontend/node_modules/
+timetracker-frontend/build/
+timetracker-frontend/dist/
+timetracker-frontend/.env*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*git
+
+
+
+
+

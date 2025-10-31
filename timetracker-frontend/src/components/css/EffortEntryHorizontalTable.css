@@ -1,0 +1,194 @@
+/* ===== HORIZONTAL EFFORT TABLE ===== */
+.horizontal-effort-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background-color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== TABLE ===== */
+.horizontal-effort-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 1000px;
+}
+
+.horizontal-effort-table th,
+.horizontal-effort-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* ===== HEADER ===== */
+.horizontal-effort-table th {
+  background-color: #004aad;
+  color: #fff;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* ===== FIXED FIRST 7 COLUMNS ===== */
+/* Keep first 7 columns sticky for both header and body */
+.horizontal-effort-table th:nth-child(-n+7),
+.horizontal-effort-table td:nth-child(-n+7) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+/* Keep header color intact for first 7 columns */
+.horizontal-effort-table th:nth-child(-n+7) {
+  background-color: #004aad; /* retain blue */
+  color: #fff;
+  z-index: 3; /* stay above other columns */
+}
+
+/* Body cells stay white */
+.horizontal-effort-table td:nth-child(-n+7) {
+  background-color: #fff;
+}
+
+/* ===== SCROLLBAR ===== */
+.horizontal-effort-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+.horizontal-effort-table-wrapper::-webkit-scrollbar-thumb {
+  background: #004aad;
+  border-radius: 4px;
+}
+
+/* ===== STRIPING & HOVER ===== */
+.horizontal-effort-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.horizontal-effort-table tr:hover {
+  background-color: #e8f0ff;
+}
+
+/* ===== INPUTS & SELECTS ===== */
+.horizontal-effort-table input,
+.horizontal-effort-table select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 13px;
+}
+
+.horizontal-effort-table input[type="number"] {
+  text-align: center;
+}
+
+/* ===== DELETE BUTTON ===== */
+
+
+/* ===== RESPONSIVE ===== */
+@media screen and (max-width: 768px) {
+  .horizontal-effort-table th,
+  .horizontal-effort-table td {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .delete-btn {
+    padding: 4px 8px;
+  }
+}
+
+
+/* ===== COLUMN WIDTHS ===== */
+
+/* Make key info columns wider */
+.horizontal-effort-table th:nth-child(1), /* Client */
+.horizontal-effort-table td:nth-child(1) {
+  min-width: 70px;
+  width: 130px;
+}
+
+.horizontal-effort-table th:nth-child(2), /* Ticket */
+.horizontal-effort-table td:nth-child(2) {
+  min-width: 120px;
+  width: 150px;
+}
+
+.horizontal-effort-table th:nth-child(3), /* Ticket Description */
+.horizontal-effort-table td:nth-child(3) {
+  min-width: 130px;
+  width: 200px;
+}
+
+.horizontal-effort-table th:nth-child(4), /* Category */
+.horizontal-effort-table td:nth-child(4) {
+  min-width: 130px;
+  width: 150px;
+}
+
+.horizontal-effort-table th:nth-child(5), /* Billable */
+.horizontal-effort-table td:nth-child(5) {
+  min-width: 100px;
+  width: 120px;
+}
+
+.horizontal-effort-table th:nth-child(6), /* Description */
+.horizontal-effort-table td:nth-child(6) {
+  min-width: 150px;
+  width: 220px;
+}
+
+/* Hours columns (date columns) smaller */
+.horizontal-effort-table th:nth-child(n+7):not(:last-child),
+.horizontal-effort-table td:nth-child(n+7):not(:last-child) {
+  min-width: 50px;
+  width: 80px;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Action column (last one) */
+.horizontal-effort-table th:last-child,
+.horizontal-effort-table td:last-child {
+  min-width: 60px;
+  width: 60px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.plus-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.plus-btn:hover {
+  background-color:#025b17;
+}

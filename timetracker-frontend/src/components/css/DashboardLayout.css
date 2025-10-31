@@ -1,0 +1,32 @@
+/* ===== SIDE NAV ===== */
+.sidebar {
+  width: 80px; /* slim sidebar */
+  background-color: #004aad;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 60px; /* offset for topbar */
+  min-height: 100vh;
+  top: 60px; /* below header */
+  left: 0;
+  z-index: 50;
+}
+
+/* ===== MAIN SECTION ===== */
+.main-section {
+  display: flex;
+  flex: 1;
+  margin-top: 30px; /* offset for topbar */
+  margin-left: 0px; /* now flush with sidebar */
+}
+
+/* ===== PAGE CONTENT ===== */
+.page-content {
+  flex: 1;
+  padding: 40px 25px 25px 10px; /* top, right, bottom, left */
+  min-height: calc(100vh - 60px);
+  box-sizing: border-box;
+  background-color: #f8f9fb;
+  overflow-x: auto;
+}

@@ -1,0 +1,43 @@
+/* ===== MAIN SECTION ===== */
+.main-section {
+  display: flex;
+  flex: 1;
+}
+
+/* ===== PAGE CONTENT ===== */
+.page-content {
+  flex: 1;
+  margin-left: 50px; /* keep or adjust as needed for sidebar spacing */ /* top, right, bottom, left */
+  min-height: calc(100vh - 60px);
+  box-sizing: border-box;
+  background-color: #f8f9fb;
+  overflow-x: auto;
+}
+
+/* Optional: adjust sidebar to match new spacing */
+.sidebar {
+  width: 100px; /* increased from 80px to match margin-left of page-content */
+}
+
+/* Keep nav items centered */
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+  cursor: pointer;
+  width: 100%;
+  padding: 10px 0;
+  transition: background 0.2s;
+}
+
+/* Nav icon size remains same */
+.nav-icon {
+  font-size: 24px;
+}
+
+.nav-label {
+  font-size: 0.75rem;
+  margin-top: 5px;
+  text-align: center;
+}

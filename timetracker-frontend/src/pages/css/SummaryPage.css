@@ -1,0 +1,215 @@
+/* ===== CONTAINER ===== */
+.summary-container {
+  min-height: 100vh;
+  padding: 0px;
+  font-family: "Poppins", sans-serif;
+  background-color: #f8f9fb;
+}
+
+/* ===== PAGE CONTENT ===== */
+.page-content {
+  padding: 20px;
+}
+
+/* ===== PAGE TITLE ===== */
+.summary-header h1 {
+  font-size: 1.5rem;
+  color: #004aad;
+  margin-bottom: 20px;
+}
+
+/* ===== DATE RANGE PICKERS ===== */
+.date-range-container {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.date-range-container label {
+  font-weight: 500;
+}
+
+.date-range-container input[type="date"] {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.date-range-container .btn {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  background-color: #004aad;
+}
+
+.date-range-container .btn:hover {
+  background-color: #0066ff;
+}
+
+/* ===== SUMMARY TABLE ===== */
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
+}
+
+.summary-table th,
+.summary-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+.summary-table th {
+  background-color: #004aad;
+  color: white;
+  font-weight: bold;
+}
+
+.summary-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.summary-table tr:hover {
+  background-color: #e8f0ff;
+}
+
+.summary-table select,
+.summary-table input {
+  width: 100%;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+/* ===== TABLE ACTION BUTTONS ===== */
+.edit-btn,
+.save-btn,
+.cancel-btn {
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  transition: 0.3s;
+}
+
+.edit-btn {
+  background-color: #007bff;
+}
+
+.edit-btn:hover {
+  background-color: #0056cc;
+}
+
+.save-btn {
+  background-color: #28a745;
+}
+
+.save-btn:hover {
+  background-color: #218838;
+}
+
+.cancel-btn {
+  background-color: #dc3545;
+}
+
+.cancel-btn:hover {
+  background-color: #c82333;
+}
+
+/* ===== POPUPS ===== */
+.popup {
+  margin-top: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.popup.success {
+  background-color: #007bff;
+  color: white;
+}
+
+.popup.error {
+  background-color: #f44336;
+  color: white;
+}
+
+/* ===== DELETE BUTTON ===== */
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+/* ===== OPTION BUTTONS (if used) ===== */
+.option-button {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: 1px solid #004aad;
+  background-color: white;
+  color: #004aad;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.option-button:hover {
+  background-color: #004aad;
+  color: white;
+}
+
+.option-button.active {
+  background-color: #004aad;
+  color: white;
+}
+
+/* ===== RESPONSIVE ===== */
+@media screen and (max-width: 768px) {
+  .summary-header h1 {
+    font-size: 20px;
+  }
+
+  .date-range-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .date-range-container .btn {
+    width: 100%;
+  }
+
+  .summary-table th,
+  .summary-table td {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .summary-table td .edit-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    min-height: 40px;
+  }
+}

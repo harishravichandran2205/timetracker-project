@@ -1,0 +1,94 @@
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 25px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.summary-table th,
+.summary-table td {
+  border: 1px solid #ddd;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.summary-table th {
+  background-color: #004aad;
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.summary-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.summary-table tr:hover {
+  background-color: #eef3ff;
+}
+
+.summary-table td select,
+.summary-table td input {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+}
+
+.summary-table td input:focus,
+.summary-table td select:focus {
+  outline: none;
+  border-color: #004aad;
+  box-shadow: 0 0 3px rgba(0, 74, 173, 0.4);
+}
+
+/* Buttons inside table rows */
+.summary-table .edit-btn {
+  background-color: #004aad;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.summary-table .edit-btn:hover {
+  background-color: #002d6b;
+}
+
+.summary-table .save-btn {
+  background-color: #0a8754;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.summary-table .save-btn:hover {
+  background-color: #0c6f47;
+}
+
+.summary-table .cancel-btn {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.summary-table .cancel-btn:hover {
+  background-color: #d9363e;
+}

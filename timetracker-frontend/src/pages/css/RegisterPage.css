@@ -1,0 +1,120 @@
+/* src/pages/RegisterPage.css */
+
+/* Container */
+.register-container {
+  max-width: 400px;
+  margin: 50px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Heading */
+.register-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #004aad;
+}
+
+/* Inline messages */
+.inline-message {
+  padding: 10px;
+  margin: 15px 0;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.inline-message.error {
+  background-color: #fdecea;
+  color: #d93025;
+  border: 1px solid #f5c6cb;
+}
+
+.inline-message.success {
+  background-color: #e6f4ea;
+  color: #188038;
+  border: 1px solid #a6d8b8;
+}
+
+/* Form groups */
+.register-form .form-group {
+  margin-bottom: 15px;
+}
+
+.register-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.register-form input,
+.register-form select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.register-form input:focus,
+.register-form select:focus {
+  border-color: #004aad;
+  outline: none;
+}
+
+/* Buttons */
+.register-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #004aad;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.register-button:hover {
+  background-color: #0066ff;
+}
+
+/* Optional error message inside form (not used now) */
+.error-message {
+  color: red;
+  font-weight: 500;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media screen and (max-width: 480px) {
+  .register-container {
+    padding: 20px;
+    margin: 20px;
+  }
+
+  .register-form input,
+  .register-form select {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .register-button {
+    padding: 10px;
+    font-size: 15px;
+  }
+}

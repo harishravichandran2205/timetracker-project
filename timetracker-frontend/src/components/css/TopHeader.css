@@ -1,0 +1,81 @@
+.top-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: #004aad;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  z-index: 100;
+}
+
+.app-title {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.top-right {
+  position: relative;
+  padding-right : 10px;
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.avatar-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.profile-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  width: 160px;
+  overflow: hidden;
+  z-index: 200;
+}
+
+.profile-menu button {
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.profile-menu button:hover {
+  background-color: #f2f2f2;
+}
+
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.o-company-logo{
+padding-left : -20px;
+width : 45px;
+height : 50px;
+}
+
+.usericon
+{
+font-size : 40px;
+padding-top : 10px;
+
+}
