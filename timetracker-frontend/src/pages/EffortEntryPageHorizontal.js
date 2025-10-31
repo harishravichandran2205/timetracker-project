@@ -88,10 +88,10 @@ const EffortEntryPageHorizontal = () => {
       const diffToMonday = day === 0 ? -6 : 1 - day;
       startDate = new Date(today); startDate.setDate(today.getDate() + diffToMonday);
       endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 6);
-    } else if (selectedMode === "monthly") {
-      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    }
+        } else if (selectedMode === "monthly") {
+         startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+         endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        }
     const formatDate = (d) => `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
     setDateRange({ start: formatDate(startDate), end: formatDate(endDate) });
   };
@@ -101,6 +101,60 @@ const EffortEntryPageHorizontal = () => {
     calculateDateRange(selectedMode);
     setRows(selectedMode ? [createNewRow()] : []);
   };
+
+// 🟩 Previous Week — show full 7-day week even if it spans months
+const handlePrevWeek = () => {
+  if (mode !== "weekly") return;
+
+  const [sd, sm, sy] = dateRange.start.split("-");
+  const currentStart = new Date(`${sy}-${sm}-${sd}`);
+
+  const today = new Date();
+  const allowedStart = new Date(today.getFullYear(), today.getMonth() - 1, 1); // 1st of previous month
+
+  // Calculate new start (7 days earlier)
+  const newStart = new Date(currentStart);
+  newStart.setDate(currentStart.getDate() - 7);
+
+  // Only block if the *start date* goes before the allowedStart
+  if (newStart < allowedStart) return;
+
+  // Always compute a full week
+  const newEnd = new Date(newStart);
+  newEnd.setDate(newStart.getDate() + 6);
+
+  const formatDate = (d) =>
+    `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+
+  setDateRange({ start: formatDate(newStart), end: formatDate(newEnd) });
+};
+
+// 🟩 Next Week — show full 7-day week even if it spans into next month
+const handleNextWeek = () => {
+  if (mode !== "weekly") return;
+
+  const [sd, sm, sy] = dateRange.start.split("-");
+  const currentStart = new Date(`${sy}-${sm}-${sd}`);
+
+  const today = new Date();
+  const allowedEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); // last day of current month
+
+  // Calculate new start (7 days later)
+  const newStart = new Date(currentStart);
+  newStart.setDate(currentStart.getDate() + 7);
+
+  // Compute new end (6 days after)
+  const newEnd = new Date(newStart);
+  newEnd.setDate(newStart.getDate() + 6);
+
+  // Only block if the *start date* itself goes beyond allowedEnd
+  if (newStart > allowedEnd) return;
+
+  const formatDate = (d) =>
+    `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+
+  setDateRange({ start: formatDate(newStart), end: formatDate(newEnd) });
+};
 
 const getDateColumns = () => {
   if (!dateRange.start || !dateRange.end) return [];
@@ -136,28 +190,90 @@ const getDateColumns = () => {
 
   const showPopup = (msg, type="success") => { setPopup({ message: msg, type }); setTimeout(() => setPopup({ message: "", type: "" }), 3000); };
 
-  const handleSave = async () => {
-    const token = localStorage.getItem("token");
-    const email = localStorage.getItem("email");
-    const nameParts = (username || "User").split(" ");
-    const firstName = nameParts[0]; const lastName = nameParts.slice(1).join(" ");
-    const hasData = rows.some(r => Object.values(r.hoursByDate).some(val => val !== ""));
-    if (!hasData) { showPopup("No data to save! All are Required", "error"); return; }
-    const payload = rows.map(row => ({ email, firstName, lastName, ...row }));
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/tasks`, {
-        method: "POST",
-        headers: { "Content-Type":"application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json().catch(()=>({}));
-      console.log(response);
-      console.log(response.data);
-      showPopup(response.ok ? data.data?.message || "Tasks saved!" : data.data?.error || "Task not saved!", response.ok?"success":"error");
-      if(response.ok) setRows([createNewRow()]);
-    } catch(err){ console.error(err); }
-  };
+ const handleSave = async () => {
+   const token = localStorage.getItem("token");
+   const email = localStorage.getItem("email");
+   const nameParts = (username || "User").split(" ");
+   const firstName = nameParts[0];
+   const lastName = nameParts.slice(1).join(" ");
 
+   const hasData = rows.some(r =>
+     Object.values(r.hoursByDate).some(val => val !== "")
+   );
+   if (!hasData) {
+     showPopup("No data to save! All are Required", "error");
+     return;
+   }
+
+   // ✅ Helper to convert "30 Oct (Thu)" → "30-10-2025"
+   const normalizeDateKey = (rawDate) => {
+     rawDate = rawDate.trim();
+
+     // Already in dd-MM-yyyy format
+     if (/^\d{2}-\d{2}-\d{4}$/.test(rawDate)) return rawDate;
+
+     // Example: "30 Oct (Thu)" → extract "30" + "Oct"
+     const match = rawDate.match(/^(\d{1,2})\s+([A-Za-z]{3})/);
+     if (match) {
+       const day = match[1].padStart(2, "0");
+       const monthAbbr = match[2];
+       const monthMap = {
+         Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+         May: "05", Jun: "06", Jul: "07", Aug: "08",
+         Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+       };
+       const month = monthMap[monthAbbr] || "01";
+       const year = new Date().getFullYear(); // current year
+       return `${day}-${month}-${year}`;
+     }
+
+     // Fallback (e.g., if already "2025-10-30")
+     if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+       const [y, m, d] = rawDate.split("-");
+       return `${d}-${m}-${y}`;
+     }
+
+     return rawDate;
+   };
+
+   // ✅ Normalize hoursByDate keys before sending
+   const normalizedRows = rows.map(row => {
+     const normalizedHours = {};
+     Object.entries(row.hoursByDate).forEach(([key, val]) => {
+       if (val !== "" && val != null) {
+         const formattedKey = normalizeDateKey(key);
+         normalizedHours[formattedKey] = val;
+       }
+     });
+     return { email, firstName, lastName, ...row, hoursByDate: normalizedHours };
+   });
+
+   try {
+     const response = await fetch(`${API_BASE_URL}/api/tasks-new`, {
+       method: "POST",
+       headers: {
+         "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`,
+       },
+       body: JSON.stringify(normalizedRows),
+     });
+
+     const data = await response.json().catch(() => ({}));
+     console.log(response);
+     console.log(data);
+
+     showPopup(
+       response.ok
+         ? data.data?.message || "Tasks saved!"
+         : data.data?.error || "Task not saved!",
+       response.ok ? "success" : "error"
+     );
+
+     if (response.ok) setRows([createNewRow()]);
+   } catch (err) {
+     console.error(err);
+   }
+ };
   const hasUnsavedChanges = () => rows.some(r=>Object.values(r.hoursByDate).some(v=>v&&v.toString().trim()!==""));
 
   // SideNav Navigation & Modal
@@ -180,7 +296,6 @@ const getDateColumns = () => {
               <option value="">Select</option>
               <option value="daily">Today</option>
               <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
             </select>
           </div>
 
@@ -188,8 +303,27 @@ const getDateColumns = () => {
             <>
               <div className="date-range-info"><strong>Date range:</strong> {dateRange.start} to {dateRange.end}</div>
               <div className="effort-actions-top">
-                <button className="btn add-btn" onClick={handleAddRow}>Add New Entry</button>
-                <button className="btn save-btn" onClick={handleSave}>Save</button>
+                <div className="left-actions">
+                  <button className="btn add-btn" onClick={handleAddRow}>
+                    Add New Entry
+                  </button>
+                  {mode === "weekly" && (
+                    <button className="btn prev-week-btn" onClick={handlePrevWeek}>
+                      Previous Week
+                    </button>
+                  )}
+                </div>
+
+                <div className="right-actions">
+                  {mode === "weekly" && (
+                    <button className="btn next-week-btn" onClick={handleNextWeek}>
+                      Next Week
+                    </button>
+                  )}
+                  <button className="btn save-btn" onClick={handleSave}>
+                    Save
+                  </button>
+                </div>
               </div>
               <div ref={tableWrapperRef}>
               <HorizontalEffortTable
