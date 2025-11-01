@@ -1,6 +1,6 @@
 
 INSERT ignore INTO app_user (id, email, first_name, last_name, password)
-VALUES (1, 'admin@ogon.com', 'Admin', 'User', '$2a$10$EX6klKB3SZwImF9JRWJrfeWfozx..5GCS22mqlcGe9Ol6fH42Ao2K');
+VALUES (1, 'admin@ogon.com', 'Admin', 'User', '$2a$10$OKKlmW5bQzpAAHJmeBUUsOLE7l2krYD.qwdcT6u4aXFNnrF9ZfvTK');
 
 --
 -- Insert roles for admin user
