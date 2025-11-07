@@ -113,11 +113,13 @@ const handlePrevWeek = () => {
   const allowedStart = new Date(today.getFullYear(), today.getMonth() - 1, 1); // 1st of previous month
 
   // Calculate new start (7 days earlier)
-  const newStart = new Date(currentStart);
+  let newStart = new Date(currentStart);
   newStart.setDate(currentStart.getDate() - 7);
 
-  // Only block if the *start date* goes before the allowedStart
-  if (newStart < allowedStart) return;
+  // clamp start
+  if (newStart < allowedStart) {
+    newStart = allowedStart;
+  }
 
   // Always compute a full week
   const newEnd = new Date(newStart);
@@ -247,6 +249,48 @@ const getDateColumns = () => {
      });
      return { email, firstName, lastName, ...row, hoursByDate: normalizedHours };
    });
+
+const toYMD = (dmy) => {
+  const [d,m,y] = dmy.split("-");
+  return `${y}-${m}-${d}`;
+};
+
+// today yyyy-MM-dd
+const pad = (n) => String(n).padStart(2,"0");
+const t = new Date();
+const todayStr = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
+
+
+
+let futureDates = [];
+
+for (const r of rows) {
+  for (const [dt, val] of Object.entries(r.hoursByDate)) {
+
+    if (!val) continue; // skip empty cell (IMPORTANT)
+
+    const dmy = normalizeDateKey(dt);
+    const ymd = toYMD(dmy);
+
+    // only check future if user actually typed value
+    if (ymd > todayStr) {
+      futureDates.push(dmy);
+    }
+  }
+}
+
+// finally show message if any future date entered
+if (futureDates.length > 0) {
+  // sort
+  futureDates.sort((a,b)=>toYMD(a).localeCompare(toYMD(b)));
+
+  if (futureDates.length === 1) {
+    showPopup(`Cannot save future date: ${futureDates[0]}`,"error");
+  } else {
+    showPopup(`Cannot save future dates (${futureDates[0]} to ${futureDates[futureDates.length - 1]})`,"error");
+  }
+  return;
+}
 
    try {
      const response = await fetch(`${API_BASE_URL}/api/tasks-new`, {
