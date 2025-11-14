@@ -3,7 +3,9 @@ package com.ogon.timetracker.controllers;
 import com.ogon.timetracker.dto.TaskDTO;
 import com.ogon.timetracker.entities.TaskEntity;
 import com.ogon.timetracker.repositories.TaskRepository;
+import com.ogon.timetracker.services.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -92,7 +94,7 @@ public class TaskController {
             String billable = (String) dto.get("billable");
             String ticketDescription = (String) dto.get("ticketDescription");
 
-            // ✅ Extract hoursByDate map safely
+
             Map<String, Object> hoursByDate = (Map<String, Object>) dto.get("hoursByDate");
 
             if (hoursByDate != null && !hoursByDate.isEmpty()) {
@@ -131,7 +133,7 @@ public class TaskController {
 
         if (validTasks.isEmpty()) {
             return ResponseEntity
-                    .badRequest()
+                    .ok()
                     .body(Map.of("error", "No valid tasks found. Please check input data."));
         }
 
@@ -140,6 +142,28 @@ public class TaskController {
         return ResponseEntity.ok(Map.of(
                 "message", validTasks.size() + " task(s) saved successfully!"
         ));
+    }
+
+    private final TaskService taskService; // instance of TaskService
+
+    @GetMapping("/effort-entry-horizon")
+    public  ResponseEntity<Map<String, Object>> getEffortEntries(
+            @RequestParam String email,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<TaskDTO> results =  taskService.getMergedEffortsByDate(email, startDate, endDate);
+
+        Map<String, Object> response = new HashMap<>();
+        if(results.size() > 0 )
+        {
+            response.put("message", "Effort Entries Fetched For This Week");
+            response.put("data", results);
+            return ResponseEntity.ok(response);
+        }
+        response.put("message","No Effort Entries Found");
+//        response.put("data", results);
+       return  ResponseEntity.ok(response);
     }
 
 
