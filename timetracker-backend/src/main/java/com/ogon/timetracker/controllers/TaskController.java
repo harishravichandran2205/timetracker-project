@@ -74,16 +74,20 @@ public class TaskController {
         ));
     }
     @PostMapping("/tasks-new")
-    public ResponseEntity<Map<String, String>> saveTasksNew(@RequestBody List<Map<String, Object>> tasks) {
+    public ResponseEntity<Map<String, Object>> saveTasksNew(@RequestBody List<Map<String, Object>> tasks) {
+
         if (tasks == null || tasks.isEmpty()) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("error", "Task list cannot be empty"));
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", "Task list cannot be empty")
+            );
         }
 
-        List<TaskEntity> validTasks = new ArrayList<>();
+        List<TaskEntity> toInsert = new ArrayList<>();
+        List<TaskEntity> toUpdate = new ArrayList<>();
+        List<String> updateLogs = new ArrayList<>();
 
         for (Map<String, Object> dto : tasks) {
+
             String email = (String) dto.get("email");
             String firstName = (String) dto.get("firstName");
             String lastName = (String) dto.get("lastName");
@@ -94,55 +98,87 @@ public class TaskController {
             String billable = (String) dto.get("billable");
             String ticketDescription = (String) dto.get("ticketDescription");
 
-
             Map<String, Object> hoursByDate = (Map<String, Object>) dto.get("hoursByDate");
+            if (hoursByDate == null || hoursByDate.isEmpty()) continue;
 
-            if (hoursByDate != null && !hoursByDate.isEmpty()) {
-                for (Map.Entry<String, Object> entry : hoursByDate.entrySet()) {
-                    String date = entry.getKey();
-                    Object hoursObj = entry.getValue();
+            for (Map.Entry<String, Object> entry : hoursByDate.entrySet()) {
 
-                    if (hoursObj == null || hoursObj.toString().isBlank()) continue;
+                String date = entry.getKey();
+                Object hoursObj = entry.getValue();
+                if (hoursObj == null || hoursObj.toString().isBlank()) continue;
 
-                    double hours;
-                    try {
-                        hours = Double.parseDouble(hoursObj.toString());
-                    } catch (NumberFormatException e) {
-                        continue; // Skip invalid hours
+                double hours;
+                try {
+                    hours = Double.parseDouble(hoursObj.toString());
+                } catch (Exception e) {
+                    continue;
+                }
+
+                String normalizedClient = client != null ? client.toUpperCase() : null;
+
+                // 🔍 Check existing tasks (LIST)
+                List<TaskEntity> existingList = taskRepository.findExistingTask(
+                        email, normalizedClient, ticket, date, category, description, billable
+                );
+
+                if (!existingList.isEmpty()) {
+
+                    // 🔁 FOR LOOP → update every duplicate row
+                    for (TaskEntity existing : existingList) {
+                        double oldHours = existing.getHours();
+
+                        // If hours same → no change (optional skip)
+                        if (Double.compare(oldHours, hours) == 0) {
+                            updateLogs.add("Skipped (same hours): " + normalizedClient + " | " + ticket + " | " + date);
+                            continue;
+                        }
+
+                        existing.setHours(hours);
+                        toUpdate.add(existing);
+
+                        updateLogs.add(
+                                "Updated: " + normalizedClient + " | " + ticket + " | " + date +
+                                        " (old: " + oldHours + ", new: " + hours + ")"
+                        );
                     }
 
-                    // ✅ Create one TaskEntity per date entry
-                    TaskEntity entity = TaskEntity.builder()
-                            .email(email)
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .client(client != null ? client.toUpperCase() : null)
-                            .ticket(ticket)
-                            .ticketDescription(ticketDescription)
-                            .category(category)
-                            .description(description)
-                            .billable(billable)
-                            .hours(hours)
-                            .date(date) // "dd-MM-yyyy" format from frontend
-                            .build();
-
-                    validTasks.add(entity);
+                    continue; // skip insert
                 }
+
+                // ➕ INSERT new row
+                TaskEntity entity = TaskEntity.builder()
+                        .email(email)
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .client(normalizedClient)
+                        .ticket(ticket)
+                        .ticketDescription(ticketDescription)
+                        .category(category)
+                        .description(description)
+                        .billable(billable)
+                        .hours(hours)
+                        .date(date)
+                        .build();
+
+                toInsert.add(entity);
             }
         }
 
-        if (validTasks.isEmpty()) {
-            return ResponseEntity
-                    .ok()
-                    .body(Map.of("error", "No valid tasks found. Please check input data."));
-        }
+        // Save operations
+        if (!toInsert.isEmpty()) taskRepository.saveAll(toInsert);
+        if (!toUpdate.isEmpty()) taskRepository.saveAll(toUpdate);
 
-        taskRepository.saveAll(validTasks);
-
-        return ResponseEntity.ok(Map.of(
-                "message", validTasks.size() + " task(s) saved successfully!"
-        ));
+        return ResponseEntity.ok(
+                Map.of(
+                        "inserted", toInsert.size(),
+                        "updated", toUpdate.size(),
+                        "updateLogs", updateLogs,
+                        "message", "Tasks processed successfully"
+                )
+        );
     }
+
+
 
     private final TaskService taskService; // instance of TaskService
 

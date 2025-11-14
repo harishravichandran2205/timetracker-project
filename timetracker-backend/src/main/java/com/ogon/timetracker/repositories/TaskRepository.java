@@ -36,15 +36,52 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
       category,
       billable,
       description,
-      JSON_OBJECTAGG(date, hours) AS hoursByDate
-  FROM timetracker_db.tasks
-  WHERE email = :email
-    AND STR_TO_DATE(date, '%d-%m-%Y') BETWEEN :startDate AND :endDate
-  GROUP BY client, ticket, ticket_description, category, billable, description
+      JSON_OBJECTAGG(date, totalHours) AS hoursByDate
+  FROM (
+      SELECT 
+          client,
+          ticket,
+          ticket_description,
+          category,
+          billable,
+          description,
+          date,
+          SUM(hours) AS totalHours   -- ✔ sums ONLY same day
+      FROM timetracker_db.tasks
+      WHERE email = :email
+        AND STR_TO_DATE(date, '%d-%m-%Y') BETWEEN :startDate AND :endDate
+      GROUP BY client, ticket, ticket_description, category, billable, description, date
+      -- ✔ grouping includes date → means adding only for same day
+  ) merged
+  GROUP BY 
+      client, ticket, ticket_description, category, billable, description
   """, nativeQuery = true)
   List<MergedEffortProjections> getMergedEffortsByDate(
           @Param("email") String email,
           @Param("startDate") LocalDate startDate,
           @Param("endDate") LocalDate endDate
   );
+
+
+  @Query(value = """
+SELECT *
+FROM timetracker_db.tasks
+WHERE email = :email
+  AND client = :client
+  AND ticket = :ticket
+  AND date = :date
+  AND category = :category
+  AND description = :description
+  AND billable = :billable
+""", nativeQuery = true)
+  List<TaskEntity> findExistingTask(
+          @Param("email") String email,
+          @Param("client") String client,
+          @Param("ticket") String ticket,
+          @Param("date") String date,
+          @Param("category") String category,
+          @Param("description") String description,
+          @Param("billable") String billable
+  );
+
 }
