@@ -30,6 +30,22 @@ const EffortEntryPageHorizontal = () => {
     return `${y}-${m}-${d}`;
   };
 
+  const parseDMY = (dmy) => {
+             const [d, m, y] = dmy.split("-");
+             return new Date(`${y}-${m}-${d}`);
+     };
+
+     const formatDMY = (d) =>
+        `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+
+     const getMonday = (date) => {
+      const d = new Date(date);
+      const day = d.getDay(); // 0=Sun, 1=Mon...
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      return d;
+     };
+
   const pad2 = (n) => String(n).padStart(2, "0");
 
   // Handles keys like "dd-MM-yyyy" or "yyyy-MM-dd" and normalizes to "dd-MM-yyyy"
@@ -93,6 +109,7 @@ const EffortEntryPageHorizontal = () => {
   }, []);
 
   const createNewRow = () => ({
+    rowId: null,
     client: "",
     ticket: "",
     ticketDescription: "",
@@ -133,55 +150,70 @@ const EffortEntryPageHorizontal = () => {
 
   // 🟩 Previous/Next Week
   const handlePrevWeek = () => {
-    if (mode !== "weekly") return;
+    if (mode !== "weekly" || !dateRange.start) return;
 
-    const [sd, sm, sy] = dateRange.start.split("-");
-    const currentStart = new Date(`${sy}-${sm}-${sd}`);
+    // current start → normalize to Monday
+    const currentStart = parseDMY(dateRange.start);
+    const currentMonday = getMonday(currentStart);
 
     const today = new Date();
-    const allowedStart = new Date(today.getFullYear(), today.getMonth() - 1, 1); // 1st of previous month
 
-    // new start (7 days earlier)
-    let newStart = new Date(currentStart);
-    newStart.setDate(currentStart.getDate() - 7);
+    // earliest allowed = 1st of previous month (your old rule)
+    const allowedStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
-    // clamp start
+    // go one full week back from current Monday
+    let newStart = new Date(currentMonday);
+    newStart.setDate(newStart.getDate() - 7);
+
+    // don't go before allowedStart
     if (newStart < allowedStart) {
       newStart = allowedStart;
     }
 
-    // full week
+    // always show full 7 days (Mon–Sun), even if it crosses into next month
     const newEnd = new Date(newStart);
     newEnd.setDate(newStart.getDate() + 6);
 
-    const fmt = (d) => `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
-    setDateRange({ start: fmt(newStart), end: fmt(newEnd) });
+    setDateRange({
+      start: formatDMY(newStart),
+      end: formatDMY(newEnd),
+    });
   };
 
-  const handleNextWeek = () => {
-    if (mode !== "weekly") return;
 
-    const [sd, sm, sy] = dateRange.start.split("-");
-    const currentStart = new Date(`${sy}-${sm}-${sd}`);
+
+  const handleNextWeek = () => {
+    if (mode !== "weekly" || !dateRange.start) return;
+
+    // current range start → normalize to Monday
+    const currentStart = parseDMY(dateRange.start);
+    const currentMonday = getMonday(currentStart);
 
     const today = new Date();
+
+    // real current week Monday (based on today)
     const day = today.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
     const currentWeekStart = new Date(today);
     currentWeekStart.setDate(today.getDate() + diffToMonday);
 
-    const newStart = new Date(currentStart);
-    newStart.setDate(currentStart.getDate() + 7);
+    // 👉 next week = Monday + 7
+    const newStart = new Date(currentMonday);
+    newStart.setDate(newStart.getDate() + 7);
 
-    // don't go beyond current week start
+    // keep your rule: don't go beyond current week
     if (newStart > currentWeekStart) return;
 
+    // 👉 always full 7 days (Mon–Sun), even if next month
     const newEnd = new Date(newStart);
     newEnd.setDate(newStart.getDate() + 6);
 
-    const fmt = (d) => `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
-    setDateRange({ start: fmt(newStart), end: fmt(newEnd) });
+    setDateRange({
+      start: formatDMY(newStart),
+      end: formatDMY(newEnd),
+    });
   };
+
 
   const getDateColumns = () => {
     if (!dateRange.start || !dateRange.end) return [];
@@ -232,8 +264,10 @@ const EffortEntryPageHorizontal = () => {
      return;
    }
 
+
    // ✅ Helper to pad digits
    const pad2 = (n) => String(n).padStart(2, "0");
+
 
    // ✅ Helper: Convert any date format → dd-MM-yyyy
    const toDMY = (raw) => {
@@ -278,6 +312,7 @@ const EffortEntryPageHorizontal = () => {
      return raw;
    };
 
+
    // ✅ Normalize payload
    const payload = rows.map((row) => {
      const normalizedHoursByDate = {};
@@ -289,6 +324,7 @@ const EffortEntryPageHorizontal = () => {
      }
 
      return {
+       rowId: row.rowId || null,
        email,
        firstName,
        lastName,
@@ -346,10 +382,12 @@ const EffortEntryPageHorizontal = () => {
          },
        }
      );
+     console.log(payload);
 
      showPopup(response.data.data?.message ||response.data.data?.error|| "Tasks saved successfully!",
        response.data.data.error ? "error" : "success"
      );
+     await fetchEffortEntries(false);
      console.log("Payload sent to backend:", payload);
      setIsDirty(false);
    } catch (error) {
@@ -362,7 +400,7 @@ const EffortEntryPageHorizontal = () => {
 
 
 
- const fetchEffortEntries = async () => {
+ const fetchEffortEntries = async (showMessage) => {
    const token = localStorage.getItem("token");
    const email = localStorage.getItem("email");
 
@@ -386,6 +424,7 @@ const EffortEntryPageHorizontal = () => {
 
      // ✅ Convert API shape directly into your row structure
      const mappedRows = entries.map((entry) => ({
+       rowId: entry.rowId ?? entry.row_id ?? entry.rowID ?? null,
        client: entry.client || "",
        ticket: entry.ticket || "",
        ticketDescription: entry.ticketDescription || "",
@@ -396,7 +435,10 @@ const EffortEntryPageHorizontal = () => {
 
      }));
      setRows(mappedRows.length > 0 ? mappedRows : [createNewRow()]);
-     showPopup(response.data.data.message, "success");
+     if(showMessage){
+        showPopup(response.data.data.message, "success");
+     }
+
    } catch (err) {
      console.error("Failed to fetch effort entries:", err);
      showPopup("Failed to load effort entries", "error");
@@ -406,7 +448,7 @@ const EffortEntryPageHorizontal = () => {
   // ✅ Trigger fetch on mode/date change
   useEffect(() => {
     if (mode && dateRange.start && dateRange.end) {
-      fetchEffortEntries();
+      fetchEffortEntries(true);
     }
   }, [mode, dateRange.start, dateRange.end]); // eslint-disable-line react-hooks/exhaustive-deps
 

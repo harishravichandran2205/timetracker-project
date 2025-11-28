@@ -12,6 +12,7 @@ import java.util.Map;
 @Builder
 public class TaskDTO {
     private Long id;
+    private Long rowId;
     private String email;
     private String firstName;
     private String lastName;

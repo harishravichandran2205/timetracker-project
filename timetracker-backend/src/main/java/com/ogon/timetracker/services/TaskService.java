@@ -65,6 +65,7 @@ public class TaskService {
 
                 // Build DTO (not Entity)
                 TaskDTO dto = TaskDTO.builder()
+                        .rowId(p.getRowId())
                         .email(email)
                         .client(p.getClient())
                         .ticket(p.getTicket())

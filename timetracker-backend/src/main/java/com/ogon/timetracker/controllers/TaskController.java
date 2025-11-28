@@ -88,69 +88,127 @@ public class TaskController {
 
         for (Map<String, Object> dto : tasks) {
 
+            Long rowId = dto.get("rowId") != null
+                    ? Long.valueOf(dto.get("rowId").toString())
+                    : null;
+
             String email = (String) dto.get("email");
             String firstName = (String) dto.get("firstName");
             String lastName = (String) dto.get("lastName");
             String client = (String) dto.get("client");
             String ticket = (String) dto.get("ticket");
+            String ticketDescription = (String) dto.get("ticketDescription");
             String category = (String) dto.get("category");
             String description = (String) dto.get("description");
             String billable = (String) dto.get("billable");
-            String ticketDescription = (String) dto.get("ticketDescription");
 
             Map<String, Object> hoursByDate = (Map<String, Object>) dto.get("hoursByDate");
             if (hoursByDate == null || hoursByDate.isEmpty()) continue;
 
-            for (Map.Entry<String, Object> entry : hoursByDate.entrySet()) {
+            /* ===========================================================
+             * 1️⃣ EXISTING WEEKLY GROUP → UPDATE LOGIC
+             * =========================================================== */
+            if (rowId != null) {
 
-                String date = entry.getKey();
-                Object hoursObj = entry.getValue();
-                if (hoursObj == null || hoursObj.toString().isBlank()) continue;
+                List<TaskEntity> existingRows = taskRepository.findByRowId(rowId);
 
-                double hours;
-                try {
-                    hours = Double.parseDouble(hoursObj.toString());
-                } catch (Exception e) {
-                    continue;
-                }
+                if (!existingRows.isEmpty()) {
 
-                String normalizedClient = client != null ? client.toUpperCase() : null;
+                    // 1. Detect static field changes
+                    TaskEntity ref = existingRows.get(0);
+                    boolean staticChanged =
+                            !Objects.equals(ref.getClient(), client) ||
+                                    !Objects.equals(ref.getTicket(), ticket) ||
+                                    !Objects.equals(ref.getTicketDescription(), ticketDescription) ||
+                                    !Objects.equals(ref.getCategory(), category) ||
+                                    !Objects.equals(ref.getDescription(), description) ||
+                                    !Objects.equals(ref.getBillable(), billable);
 
-                // 🔍 Check existing tasks (LIST)
-                List<TaskEntity> existingList = taskRepository.findExistingTask(
-                        email, normalizedClient, ticket, date, category, description, billable
-                );
+                    // 2. Update existing dates
+                    for (TaskEntity existing : existingRows) {
+                        String date = existing.getDate();
 
-                if (!existingList.isEmpty()) {
+                        Object newHoursObj = hoursByDate.get(date);
 
-                    // 🔁 FOR LOOP → update every duplicate row
-                    for (TaskEntity existing : existingList) {
-                        double oldHours = existing.getHours();
+                        if (newHoursObj != null) {
+                            double newHours = Double.parseDouble(newHoursObj.toString());
 
-                        // If hours same → no change (optional skip)
-                        if (Double.compare(oldHours, hours) == 0) {
-                            updateLogs.add("Skipped (same hours): " + normalizedClient + " | " + ticket + " | " + date);
-                            continue;
+                            if (Double.compare(existing.getHours(), newHours) != 0) {
+                                existing.setHours(newHours);
+                                updateLogs.add("Updated hours | rowId=" + rowId + " date=" + date);
+                            }
                         }
 
-                        existing.setHours(hours);
-                        toUpdate.add(existing);
+                        // Update static fields IF changed
+                        if (staticChanged) {
+                            existing.setClient(client);
+                            existing.setTicket(ticket);
+                            existing.setTicketDescription(ticketDescription);
+                            existing.setCategory(category);
+                            existing.setDescription(description);
+                            existing.setBillable(billable);
+                            existing.setEmail(email);
+                            existing.setFirstName(firstName);
+                            existing.setLastName(lastName);
+                        }
 
-                        updateLogs.add(
-                                "Updated: " + normalizedClient + " | " + ticket + " | " + date +
-                                        " (old: " + oldHours + ", new: " + hours + ")"
-                        );
+                        toUpdate.add(existing);
                     }
 
-                    continue; // skip insert
-                }
+                    // 3. Insert NEW DATES not present in DB
+                    Set<String> existingDates =
+                            existingRows.stream().map(TaskEntity::getDate).collect(Collectors.toSet());
 
-                // ➕ INSERT new row
+                    for (Map.Entry<String, Object> e : hoursByDate.entrySet()) {
+                        String date = e.getKey();
+                        Object hoursObj = e.getValue();
+
+                        if (!existingDates.contains(date)) {
+                            double hours = Double.parseDouble(hoursObj.toString());
+
+                            TaskEntity newRow = TaskEntity.builder()
+                                    .rowId(rowId)
+                                    .email(email)
+                                    .firstName(firstName)
+                                    .lastName(lastName)
+                                    .client(client)
+                                    .ticket(ticket)
+                                    .ticketDescription(ticketDescription)
+                                    .category(category)
+                                    .description(description)
+                                    .billable(billable)
+                                    .hours(hours)
+                                    .date(date)
+                                    .build();
+
+                            toInsert.add(newRow);
+                            updateLogs.add("Inserted NEW date | rowId=" + rowId + " date=" + date);
+                        }
+                    }
+
+                    continue; // Done with update block
+                }
+            }
+
+            /* ===========================================================
+             * 2️⃣ NEW WEEKLY ENTRY → INSERT LOGIC
+             * =========================================================== */
+
+            rowId = taskRepository.getNextRowId();
+
+            for (Map.Entry<String, Object> e : hoursByDate.entrySet()) {
+                Object hoursObj = e.getValue();
+                if (hoursObj == null || hoursObj.toString().isBlank()) continue;
+
+                double hours = Double.parseDouble(hoursObj.toString());
+                String date = e.getKey();
+
                 TaskEntity entity = TaskEntity.builder()
+                        .rowId(rowId)
                         .email(email)
                         .firstName(firstName)
                         .lastName(lastName)
-                        .client(normalizedClient)
+                        .client(client)
                         .ticket(ticket)
                         .ticketDescription(ticketDescription)
                         .category(category)
@@ -161,10 +219,11 @@ public class TaskController {
                         .build();
 
                 toInsert.add(entity);
+                updateLogs.add("Inserted NEW weekly row | rowId=" + rowId + " date=" + date);
             }
         }
 
-        // Save operations
+        // SAVE ALL
         if (!toInsert.isEmpty()) taskRepository.saveAll(toInsert);
         if (!toUpdate.isEmpty()) taskRepository.saveAll(toUpdate);
 
@@ -173,7 +232,7 @@ public class TaskController {
                         "inserted", toInsert.size(),
                         "updated", toUpdate.size(),
                         "updateLogs", updateLogs,
-                        "message", "Tasks processed successfully"
+                        "message", "Tasks Saved successfully"
                 )
         );
     }

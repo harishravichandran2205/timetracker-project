@@ -26,10 +26,13 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
 
 
   Optional<TaskEntity> findById(Long id);
-
+  List<TaskEntity> findByRowId(Long rowId);
+  @Query(value = "SELECT COALESCE(MAX(row_id), 0) + 1 FROM tasks", nativeQuery = true)
+  Long getNextRowId();
 
   @Query(value = """
-  SELECT 
+  SELECT
+      row_id AS rowId,
       client,
       ticket,
       ticket_description AS ticketDescription,
@@ -38,7 +41,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
       description,
       JSON_OBJECTAGG(date, totalHours) AS hoursByDate
   FROM (
-      SELECT 
+      SELECT\s
+          row_id,
           client,
           ticket,
           ticket_description,
@@ -50,12 +54,12 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
       FROM timetracker_db.tasks
       WHERE email = :email
         AND STR_TO_DATE(date, '%d-%m-%Y') BETWEEN :startDate AND :endDate
-      GROUP BY client, ticket, ticket_description, category, billable, description, date
+      GROUP BY row_id,client, ticket, ticket_description, category, billable, description, date
       -- ✔ grouping includes date → means adding only for same day
   ) merged
-  GROUP BY 
-      client, ticket, ticket_description, category, billable, description
-  """, nativeQuery = true)
+  GROUP BY\s
+      row_id,client, ticket, ticket_description, category, billable, description
+ \s""", nativeQuery = true)
   List<MergedEffortProjections> getMergedEffortsByDate(
           @Param("email") String email,
           @Param("startDate") LocalDate startDate,
@@ -73,6 +77,7 @@ WHERE email = :email
   AND category = :category
   AND description = :description
   AND billable = :billable
+  AND rowId = :rowId
 """, nativeQuery = true)
   List<TaskEntity> findExistingTask(
           @Param("email") String email,
@@ -81,7 +86,8 @@ WHERE email = :email
           @Param("date") String date,
           @Param("category") String category,
           @Param("description") String description,
-          @Param("billable") String billable
+          @Param("billable") String billable,
+          @Param ("rowId") Long rowId
   );
 
 }
