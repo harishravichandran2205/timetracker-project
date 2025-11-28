@@ -192,3 +192,8 @@
 .plus-btn:hover {
   background-color:#025b17;
 }
+
+.delete-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

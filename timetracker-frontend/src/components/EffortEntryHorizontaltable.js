@@ -10,6 +10,7 @@ const HorizontalEffortTable = ({
   handleChange,
   handleDeleteRow,
   handleAddRow,
+  canDeleteRows,
 
 },ref ) => {
   return (
@@ -102,10 +103,28 @@ const HorizontalEffortTable = ({
                 </td>
               ))}
               <td>
-               <div className = "action-buttons">
-                <button className="plus-btn" onClick={() => handleAddRow(rowIndex)}>+</button>
-                <button className="delete-btn" onClick={() => handleDeleteRow(rowIndex)}>-</button> </div>
+                <div className="action-buttons">
+                  <button
+                    className="plus-btn"
+                    type="button"
+                    onClick={() => handleAddRow(rowIndex)}
+                  >
+                    +
+                  </button>
+
+                  <button
+                    className="delete-btn"
+                    type="button"
+                    disabled={
+                      rows.length <= 1 || (row.rowId !== null && row.rowId !== undefined)
+                    }
+                    onClick={() => handleDeleteRow(rowIndex)}
+                  >
+                    -
+                  </button>
+                </div>
               </td>
+
             </tr>
           ))}
         </tbody>

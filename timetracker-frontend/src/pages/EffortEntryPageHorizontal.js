@@ -8,6 +8,10 @@ import UnsavedChangesModal from "../components/UnsavedChangesModel";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/EffortEntryPageHorizontal.css";
 import "../components/css/EffortEntryHorizontalTable.css";
+import { PiArrowFatLeftFill } from "react-icons/pi";
+import { PiArrowFatRightFill } from "react-icons/pi";
+import { IoIosSave } from "react-icons/io";
+
 
 const EffortEntryPageHorizontal = () => {
   const navigate = useNavigate();
@@ -244,8 +248,40 @@ const EffortEntryPageHorizontal = () => {
     setIsDirty(true);
   };
 
+  const handleDeleteRow = (index) => {
+    // ❌ Block delete if only 1 row will remain
+    if (rows.length <= 1) {
+      showPopup("At least one row must remain", "error");
+      return;
+    }
+
+    const row = rows[index];
+
+    // ❌ Block delete for fetched rows (those having rowId)
+    if (row.rowId !== null && row.rowId !== undefined) {
+      showPopup("Cannot delete rows loaded from server", "error");
+      return;
+    }
+
+    // ✅ Allow delete for newly added rows (rowId == null)
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+
+
+  const isDeleteAllowed = () => {
+    if (rows.length <= 1) return false;                          // prevent deletion if only 1 row
+    return rows.every(r => r.rowId === null);                    // if fetched from DB → block delete
+  };
+  const hasPersisted = rows.some(
+    (r) => r.rowId !== null && r.rowId !== undefined
+  );
+
+  // global flag: can we delete rows at all?
+  const canDeleteRows = rows.length > 1 && !hasPersisted;
+
   const handleAddRow = () => setRows((prev) => [...prev, createNewRow()]);
-  const handleDeleteRow = (index) => setRows((prev) => prev.filter((_, i) => i !== index));
+//  const handleDeleteRow = (index) => setRows((prev) => prev.filter((_, i) => i !== index));
 
   const showPopup = (msg, type = "success") => {
     setPopup({ message: msg, type });
@@ -500,6 +536,12 @@ const EffortEntryPageHorizontal = () => {
               <option value="weekly">Weekly</option>
               {/* <option value="monthly">Monthly</option> */}
             </select>
+            <div className="save-btn-div">
+
+            <button className="btn save-btn" onClick={handleSave}>
+                                Save <IoIosSave />
+            </button>
+            </div>
           </div>
 
           {mode && (
@@ -510,12 +552,9 @@ const EffortEntryPageHorizontal = () => {
 
               <div className="effort-actions-top">
                 <div className="left-actions">
-                  <button className="btn add-btn" onClick={handleAddRow}>
-                    Add New Entry
-                  </button>
                   {mode === "weekly" && (
                     <button className="btn prev-week-btn" onClick={handlePrevWeek}>
-                      Previous Week
+                      <PiArrowFatLeftFill />
                     </button>
                   )}
                 </div>
@@ -523,12 +562,10 @@ const EffortEntryPageHorizontal = () => {
                 <div className="right-actions">
                   {mode === "weekly" && (
                     <button className="btn next-week-btn" onClick={handleNextWeek}>
-                      Next Week
+                      <PiArrowFatRightFill />
                     </button>
                   )}
-                  <button className="btn save-btn" onClick={handleSave}>
-                    Save
-                  </button>
+
                 </div>
               </div>
 
@@ -541,6 +578,7 @@ const EffortEntryPageHorizontal = () => {
                   handleChange={handleChange}
                   handleDeleteRow={handleDeleteRow}
                   handleAddRow={handleAddRow}
+                  canDeleteRows={canDeleteRows}
                 />
               </div>
 
