@@ -3,6 +3,7 @@ package com.ogon.timetracker.controllers;
 import com.ogon.timetracker.dto.TaskDTO;
 import com.ogon.timetracker.entities.TaskEntity;
 import com.ogon.timetracker.repositories.TaskRepository;
+import com.ogon.timetracker.repositories.UserRepository;
 import com.ogon.timetracker.services.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -34,6 +35,7 @@ public class TaskController {
 
 //        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         List<TaskEntity> validTasks = new ArrayList<>();
+        Long userId =0L;
         for (TaskDTO dto : tasks) {
             if (dto.getClient() != null && !dto.getClient().isEmpty()
                     && dto.getTicket() != null && !dto.getTicket().isEmpty()
@@ -42,9 +44,11 @@ public class TaskController {
                     && dto.getBillable() != null && !dto.getBillable().isEmpty()
                     && dto.getDate() != null && !dto.getDate().isEmpty()
                     && dto.getTicketDescription() !=null && !dto.getTicketDescription().isEmpty() ) {
+                ;
+                if(userId == 0) userId = userRepository.findByEmail(dto.getEmail()).get().getId();
 
                 TaskEntity entity = TaskEntity.builder()
-                        .email(dto.getEmail())
+                        .userId(userId)
                         .firstName(dto.getFirstName())
                         .lastName(dto.getLastName())
                         .client(dto.getClient().toUpperCase())
@@ -85,7 +89,7 @@ public class TaskController {
         List<TaskEntity> toInsert = new ArrayList<>();
         List<TaskEntity> toUpdate = new ArrayList<>();
         List<String> updateLogs = new ArrayList<>();
-
+        Long user_Id =0L;
         for (Map<String, Object> dto : tasks) {
 
             Long rowId = dto.get("rowId") != null
@@ -93,6 +97,7 @@ public class TaskController {
                     : null;
 
             String email = (String) dto.get("email");
+            if(user_Id == 0) user_Id = userRepository.findByEmail(email).get().getId();
             String firstName = (String) dto.get("firstName");
             String lastName = (String) dto.get("lastName");
             String client = (String) dto.get("client");
@@ -138,7 +143,6 @@ public class TaskController {
                                 updateLogs.add("Updated hours | rowId=" + rowId + " date=" + date);
                             }
                         }
-
                         // Update static fields IF changed
                         if (staticChanged) {
                             existing.setClient(client);
@@ -147,7 +151,7 @@ public class TaskController {
                             existing.setCategory(category);
                             existing.setDescription(description);
                             existing.setBillable(billable);
-                            existing.setEmail(email);
+                            existing.setUserId(user_Id);
                             existing.setFirstName(firstName);
                             existing.setLastName(lastName);
                         }
@@ -168,7 +172,7 @@ public class TaskController {
 
                             TaskEntity newRow = TaskEntity.builder()
                                     .rowId(rowId)
-                                    .email(email)
+                                    .userId(user_Id)
                                     .firstName(firstName)
                                     .lastName(lastName)
                                     .client(client)
@@ -205,7 +209,7 @@ public class TaskController {
 
                 TaskEntity entity = TaskEntity.builder()
                         .rowId(rowId)
-                        .email(email)
+                        .userId(user_Id)
                         .firstName(firstName)
                         .lastName(lastName)
                         .client(client)
@@ -240,6 +244,7 @@ public class TaskController {
 
 
     private final TaskService taskService; // instance of TaskService
+    private final UserRepository userRepository;
 
     @GetMapping("/effort-entry-horizon")
     public  ResponseEntity<Map<String, Object>> getEffortEntries(
@@ -247,7 +252,8 @@ public class TaskController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-        List<TaskDTO> results =  taskService.getMergedEffortsByDate(email, startDate, endDate);
+        Long user_Id =userRepository.findByEmail(email).get().getId();
+        List<TaskDTO> results =  taskService.getMergedEffortsByDate(user_Id, startDate, endDate);
 
         Map<String, Object> response = new HashMap<>();
         if(results.size() > 0 )
@@ -285,9 +291,10 @@ public class TaskController {
         LocalDate startDt = LocalDate.parse(startDate, dbFormatter);
         LocalDate endDt= LocalDate.parse(endDate, dbFormatter);
 
+        Long user_Id = userRepository.findByEmail(email).get().getId();
         // Fetch tasks from DB between startDb and endDb
-        List<TaskEntity> tasks = taskRepository.findByEmailAndDateBetweenString(
-                email,
+        List<TaskEntity> tasks = taskRepository.findByUserIdAndDateBetweenString(
+                user_Id,
                 startDt,
                 endDt
         );

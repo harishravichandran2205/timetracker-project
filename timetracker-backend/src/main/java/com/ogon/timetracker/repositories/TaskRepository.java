@@ -19,10 +19,10 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
   TaskEntity findByTicket(String ticketNumber);
 
 
-  @Query("SELECT t FROM TaskEntity t WHERE t.email = :email AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y') BETWEEN :start AND :end")
-  List<TaskEntity> findByEmailAndDateBetweenString(@Param("email") String email,
-                                                   @Param("start") LocalDate start,
-                                                   @Param("end") LocalDate end);
+//  @Query("SELECT t FROM TaskEntity t WHERE t.email = :email AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y') BETWEEN :start AND :end")
+//  List<TaskEntity> findByEmailAndDateBetweenString(@Param("email") String email,
+//                                                   @Param("start") LocalDate start,
+//                                                   @Param("end") LocalDate end);
 
 
   Optional<TaskEntity> findById(Long id);
@@ -52,7 +52,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
           date,
           SUM(hours) AS totalHours   -- ✔ sums ONLY same day
       FROM timetracker_db.tasks
-      WHERE email = :email
+      WHERE user_id = :userId
         AND STR_TO_DATE(date, '%d-%m-%Y') BETWEEN :startDate AND :endDate
       GROUP BY row_id,client, ticket, ticket_description, category, billable, description, date
       -- ✔ grouping includes date → means adding only for same day
@@ -61,7 +61,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
       row_id,client, ticket, ticket_description, category, billable, description
  \s""", nativeQuery = true)
   List<MergedEffortProjections> getMergedEffortsByDate(
-          @Param("email") String email,
+          @Param("userId") Long userId,
           @Param("startDate") LocalDate startDate,
           @Param("endDate") LocalDate endDate
   );
@@ -89,5 +89,11 @@ WHERE email = :email
           @Param("billable") String billable,
           @Param ("rowId") Long rowId
   );
+
+
+  @Query("SELECT t FROM TaskEntity t WHERE t.userId = :userId AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y') BETWEEN :start AND :end")
+  List<TaskEntity> findByUserIdAndDateBetweenString(@Param("userId") Long userId,
+                                                   @Param("start") LocalDate start,
+                                                   @Param("end") LocalDate end);
 
 }

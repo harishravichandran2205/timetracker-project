@@ -21,12 +21,12 @@ public class TaskService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public List<TaskDTO> getMergedEffortsByDate(String email,
+    public List<TaskDTO> getMergedEffortsByDate(Long userId,
                                                 LocalDate startDate,
                                                 LocalDate endDate) {
 
         List<MergedEffortProjections> projections =
-                taskRepository.getMergedEffortsByDate(email, startDate, endDate);
+                taskRepository.getMergedEffortsByDate(userId, startDate, endDate);
 
         List<TaskDTO> results = new ArrayList<>();
 
@@ -66,7 +66,7 @@ public class TaskService {
                 // Build DTO (not Entity)
                 TaskDTO dto = TaskDTO.builder()
                         .rowId(p.getRowId())
-                        .email(email)
+                        .userId(userId)
                         .client(p.getClient())
                         .ticket(p.getTicket())
                         .ticketDescription(p.getTicketDescription())

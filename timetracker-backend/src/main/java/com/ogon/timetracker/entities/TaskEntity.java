@@ -25,7 +25,6 @@ public class TaskEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long rowId;
-    private String email;
     private String firstName;
     private String lastName;
     private String client;
@@ -36,6 +35,7 @@ public class TaskEntity {
     private String billable;
     private Double hours;
     private String date;
+    private Long userId;
 
 
 
