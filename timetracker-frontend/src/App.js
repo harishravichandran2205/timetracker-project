@@ -9,6 +9,10 @@ import MyAccountPage from "./pages/MyAccountPage"
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.js"
 import DashboardLayout from "./components/DashboardLayout.js";
 import EffortEntryPageHorizon from "./pages/EffortEntryPageHorizontal.js";// Layout with static TopHeader & SideNav
+import AdminPage from "./pages/AdminPage.js";
+
+
+
 
 function App() {
   const isAuthenticated = !!localStorage.getItem("token");
@@ -30,6 +34,7 @@ function App() {
             <Route path="summary" element={<SummaryPage />} />
             <Route path="personal" element={<MyAccountPage />} />
             <Route path="effort-entry-horizon" element={<EffortEntryPageHorizon />} />
+            <Route path="admin-panel" element={<AdminPage />} />
           </Route>
         ) : (
           // If not authenticated, redirect any protected route to login

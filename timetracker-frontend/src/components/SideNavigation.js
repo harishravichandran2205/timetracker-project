@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FiHome, FiClock, FiBarChart2 } from "react-icons/fi";
-import { BiSolidHome , BiSolidBarChartSquare } from "react-icons/bi";// Feather icons
+import { BiSolidHome, BiSolidBarChartSquare } from "react-icons/bi";
 import { MdAccessTimeFilled } from "react-icons/md";
 import { GrDocumentTime } from "react-icons/gr";
 import "./css/SideNavigation.css";
@@ -15,7 +14,28 @@ const navItems = [
 
 const SideNav = ({ onNavClick }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
+  // safe click handler: use parent handler if it's a function, else use navigate()
+  const handleNavClick = (path) => {
+    if (typeof onNavClick === "function") {
+      onNavClick(path);
+    } else {
+      navigate(path);
+    }
+  };
+
+  // ---- roles -> isAdmin ----
+  let roles = [];
+  try {
+    roles = JSON.parse(localStorage.getItem("roles")) || [];
+  } catch {
+    roles = [];
+  }
+
+  const isAdmin = roles.some((r) =>
+    r.toString().toLowerCase() === "admin" || r.toString().toLowerCase() === "adimin"
+  );
 
   return (
     <aside className="side-nav">
@@ -25,13 +45,26 @@ const SideNav = ({ onNavClick }) => {
           <div
             key={item.path}
             className={`nav-item ${isActive ? "active" : ""}`}
-             onClick={() => onNavClick && onNavClick(item.path)}
+            onClick={() => handleNavClick(item.path)}
           >
             <div className="nav-icon">{item.icon}</div>
             <div className="nav-label">{item.label}</div>
           </div>
         );
       })}
+
+      {/* Admin-only tab */}
+      {isAdmin && (
+        <div
+          className={`nav-item ${
+            location.pathname === "/admin-panel" ? "active" : ""
+          }`}
+          onClick={() => handleNavClick("/admin-panel")}
+        >
+          <div className="nav-icon">🔐</div>
+          <div className="nav-label">Admin Panel</div>
+        </div>
+      )}
     </aside>
   );
 };

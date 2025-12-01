@@ -13,6 +13,7 @@ import { PiArrowFatRightFill } from "react-icons/pi";
 import { IoIosSave } from "react-icons/io";
 
 
+
 const EffortEntryPageHorizontal = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -189,34 +190,37 @@ const EffortEntryPageHorizontal = () => {
   const handleNextWeek = () => {
     if (mode !== "weekly" || !dateRange.start) return;
 
-    // current range start → normalize to Monday
+    // current visible start → normalise to Monday
     const currentStart = parseDMY(dateRange.start);
     const currentMonday = getMonday(currentStart);
 
     const today = new Date();
 
-    // real current week Monday (based on today)
-    const day = today.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-    const currentWeekStart = new Date(today);
-    currentWeekStart.setDate(today.getDate() + diffToMonday);
+    // 🔹 We now clamp by END OF CURRENT MONTH (today's month)
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); // e.g. Dec 31
 
-    // 👉 next week = Monday + 7
+    // 👉 next week start = current Monday + 7
     const newStart = new Date(currentMonday);
     newStart.setDate(newStart.getDate() + 7);
 
-    // keep your rule: don't go beyond current week
-    if (newStart > currentWeekStart) return;
+    // if the new start itself is after month end → don't move further
+    if (newStart > monthEnd) return;
 
-    // 👉 always full 7 days (Mon–Sun), even if next month
+    // tentative week end = start + 6
     const newEnd = new Date(newStart);
     newEnd.setDate(newStart.getDate() + 6);
+
+    // clamp week end to monthEnd if it goes beyond
+    if (newEnd > monthEnd) {
+      newEnd.setTime(monthEnd.getTime());
+    }
 
     setDateRange({
       start: formatDMY(newStart),
       end: formatDMY(newEnd),
     });
   };
+
 
 
   const getDateColumns = () => {
@@ -288,12 +292,39 @@ const EffortEntryPageHorizontal = () => {
     setTimeout(() => setPopup({ message: "", type: "" }), 3000);
   };
 
+
+
   // ✅ SAVE
  const handleSave = async () => {
    const token = localStorage.getItem("token");
    const email = localStorage.getItem("email");
    const firstName = localStorage.getItem("firstName");
    const lastName = localStorage.getItem("lastName");
+
+
+   // ❗ Require task description for all "used" rows
+     const rowsMissingDesc = rows.filter((r) => {
+     const hasHours = Object.values(r.hoursByDate || {}).some(
+       (v) => v && v.toString().trim() !== ""
+     );
+     const hasMainFields = [r.client, r.ticket, r.ticketDescription, r.category, r.billable]
+       .some((v) => v && v.toString().trim() !== "");
+
+     // row is considered "used" if it has hours OR some core fields filled
+     const isUsed = hasHours || hasMainFields;
+
+     return isUsed && (!r.description || !r.description.trim());
+   });
+
+   const invalidRows = rows.filter(r => !r.description || r.description.trim() === "");
+
+        if (invalidRows.length > 0) {
+          setShowValidation(true);
+          showPopup("Please fill the task description", "error");
+          return;
+        }
+        setShowValidation(false);
+
 
    if (!rows || rows.length === 0) {
      showPopup("No tasks to save", "error");
@@ -434,6 +465,8 @@ const EffortEntryPageHorizontal = () => {
    }
  };
 
+ const [showValidation, setShowValidation] = useState(false);
+
 
 
  const fetchEffortEntries = async (showMessage) => {
@@ -480,6 +513,41 @@ const EffortEntryPageHorizontal = () => {
      showPopup("Failed to load effort entries", "error");
    }
  };
+
+ const [descModal, setDescModal] = useState({
+   open: false,
+   rowIndex: null,
+   value: "",
+ });
+
+const handleOpenDescription = (rowIndex) => {
+  const current = rows[rowIndex]?.description || "";
+  setDescModal({
+    open: true,
+    rowIndex,
+    value: current,
+  });
+};
+
+const handleDescriptionChange = (e) => {
+  const value = e.target.value;
+  setDescModal((prev) => ({ ...prev, value }));
+};
+
+const handleDescriptionSave = () => {
+  if (descModal.rowIndex == null) return;
+
+  const newRows = [...rows];
+  newRows[descModal.rowIndex].description = descModal.value;
+  setRows(newRows);
+  setIsDirty(true);
+  setDescModal({ open: false, rowIndex: null, value: "" });
+};
+
+const handleDescriptionCancel = () => {
+  setDescModal({ open: false, rowIndex: null, value: "" });
+};
+
 
   // ✅ Trigger fetch on mode/date change
   useEffect(() => {
@@ -579,6 +647,8 @@ const EffortEntryPageHorizontal = () => {
                   handleDeleteRow={handleDeleteRow}
                   handleAddRow={handleAddRow}
                   canDeleteRows={canDeleteRows}
+                  onEditDescription={handleOpenDescription}
+                  showValidation={showValidation}
                 />
               </div>
 
@@ -604,6 +674,27 @@ const EffortEntryPageHorizontal = () => {
             unSave={handleUnSave}
             onCancel={handleModalCancel}
           />
+          {descModal.open && (
+            <div className="task-desc-modal-backdrop">
+              <div className="task-desc-modal">
+                <h3>Task Description</h3>
+                <textarea
+                  value={descModal.value}
+                  onChange={handleDescriptionChange}
+                  rows={8}
+                  placeholder="Enter detailed task description here..."
+                />
+                <div className="task-desc-modal-actions">
+                  <button className="btn" onClick={handleDescriptionCancel}>
+                    Cancel
+                  </button>
+                  <button className="btn save-btn" onClick={handleDescriptionSave}>
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
