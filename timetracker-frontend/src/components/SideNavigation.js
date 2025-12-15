@@ -34,7 +34,7 @@ const SideNav = ({ onNavClick }) => {
   }
 
   const isAdmin = roles.some((r) =>
-    r.toString().toLowerCase() === "admin" || r.toString().toLowerCase() === "adimin"
+    r.toString().toLowerCase() === "admin"
   );
 
   return (

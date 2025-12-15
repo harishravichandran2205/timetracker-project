@@ -3,9 +3,13 @@ import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/AdminPage.css";
+import * as XLSX from "xlsx-js-style";
+import { saveAs } from "file-saver";
 
 const AdminPage = () => {
+  const [searchBy, setSearchBy] = useState("client");
   const [client, setClient] = useState("");
+  const [emails, setEmails] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [results, setResults] = useState([]);
@@ -13,31 +17,161 @@ const AdminPage = () => {
   const [error, setError] = useState("");
   const [infoMsg, setInfoMsg] = useState("");
 
-  // ===== Date limits (max = today, no min for admin) =====
   const today = new Date();
   const calendarMax = today.toISOString().split("T")[0];
-  const calendarMin = ""; // no restriction for admin
 
   const formatForBackend = (dateStr) => {
-      if (!dateStr) return "";
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        const [yyyy, mm, dd] = dateStr.split("-");
-        return `${dd}-${mm}-${yyyy}`;
+    if (!dateStr) return "";
+    const [yyyy, mm, dd] = dateStr.split("-");
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
+  const buildSummaryData = (rows = []) => {
+    const map = {};
+
+    rows.forEach((row) => {
+      if (!row || !row.ticket) return;
+
+      const ticket = row.ticket;
+
+      if (!map[ticket]) {
+        map[ticket] = {
+          client: row.client || "",
+          ticket: row.ticket,
+          ticketDescription: row.ticketDescription || "",
+          billableHours: 0,
+          nonBillableHours: 0,
+          descriptions: new Set() // ✅ Use Set for uniqueness
+        };
       }
-      return dateStr;
+
+      const hours = Number(row.hours || 0);
+
+      if (row.billable === "Yes") {
+        map[ticket].billableHours += hours;
+      } else {
+        map[ticket].nonBillableHours += hours;
+      }
+
+      if (row.description) {
+        map[ticket].descriptions.add(row.description.trim());
+      }
+    });
+
+    // Convert Set → Array for rendering
+    return Object.values(map).map(item => ({
+      ...item,
+      descriptions: Array.from(item.descriptions)
+    }));
+  };
+
+  const downloadExcel = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const payload = {
+        searchBy,
+        client,
+        emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+        startDate: formatForBackend(startDate),
+        endDate: formatForBackend(endDate),
+        exportAll: true // ✅ KEY
+      };
+
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin-panel/search`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data =Array.isArray(res.data?.data?.data)
+                                ? res.data.data.data
+                                : [];
+
+      const fullData = buildSummaryData(data);
+      generateExcel(fullData);
+
+    } catch (err) {
+      alert("Failed to download Excel");
+    }
+  };
+
+  const generateExcel = (data) => {
+    const excelData = data.map(row => ({
+      "Client Name": row.client,
+      "Ticket Number": row.ticket,
+      "Ticket Description": row.ticketDescription,
+      "Billable Hours": row.billableHours,
+      "Non-Billable Hours": row.nonBillableHours,
+      "Task Description": (row.descriptions || [])
+        .map((d, i) => `${i + 1}. ${d}`)
+        .join("\n")
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+    // ===== Header Style =====
+    const headerStyle = {
+      font: { bold: true },
+      alignment: { horizontal: "center", vertical: "center" }
     };
+
+    ["A1","B1","C1","D1","E1","F1"].forEach(cell => {
+      if (worksheet[cell]) worksheet[cell].s = headerStyle;
+    });
+
+    // ===== Wrap text for Task Description =====
+    excelData.forEach((_, i) => {
+      const cell = `F${i + 2}`;
+      if (worksheet[cell]) {
+        worksheet[cell].s = {
+          alignment: { wrapText: true, vertical: "top" }
+        };
+      }
+    });
+
+    // ===== Column widths =====
+    worksheet["!cols"] = [
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 30 },
+      { wch: 16 },
+      { wch: 20 },
+      { wch: 60 }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Summary");
+
+    XLSX.writeFile(
+      workbook,
+      `Effort_Summary_${new Date().toISOString().slice(0,10)}.xlsx`
+    );
+  };
+
+
+
+
+
 
   const handleSearch = async () => {
     setError("");
     setInfoMsg("");
     setResults([]);
 
-    if (!client.trim()) {
+    if (searchBy === "client" && !client.trim()) {
       setError("Please enter client name");
       return;
     }
+    if (searchBy === "email" && !emails.trim()) {
+      setError("Please enter at least one email");
+      return;
+    }
+    if (searchBy === "both" && (!client.trim() || !emails.trim())) {
+      setError("Please enter both client and email");
+      return;
+    }
     if (!startDate || !endDate) {
-      setError("Please select both start and end dates");
+      setError("Please select start and end dates");
       return;
     }
 
@@ -50,27 +184,30 @@ const AdminPage = () => {
     setLoading(true);
 
     try {
+      const payload = {
+        searchBy,
+        client,
+        emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+        startDate: formatForBackend(startDate),
+        endDate: formatForBackend(endDate)
+      };
 
-      const res = await axios.get(
-              `${API_BASE_URL}/api/admin-panel/by-client?client=${client}&startDate=${formatForBackend(
-                startDate
-              )}&endDate=${formatForBackend(endDate)}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin-panel/search`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       const data =Array.isArray(res.data?.data?.data)
                           ? res.data.data.data
                           : [];
-      setResults(data);
+      const summaryData = buildSummaryData(data);
+      setResults(summaryData);
 
       if (data.length === 0) {
-        setInfoMsg("No effort records found for this client and date range");
-      } else if (res.data.message) {
-        setInfoMsg(res.data.message);
+        setInfoMsg("No effort records found for entered criteria");
       }
     } catch (err) {
-      console.log("test",err);
-      console.error("Admin summary error:", err);
       setError("Failed to fetch summary");
     } finally {
       setLoading(false);
@@ -79,93 +216,99 @@ const AdminPage = () => {
 
   return (
     <div className="admin-page">
-      <h2 className="page-title">Admin – Effort Summary</h2>
 
-      {/* Filters */}
-      <div className="admin-filters">
-        <div className="query-input">
-          <label>Client Name</label>
-          <input
-            type="text"
-            placeholder="ENIA"
-            value={client}
-            onChange={(e) => setClient(e.target.value)}
-          />
+      {/* FILTER CARD */}
+      <div className="filter-card">
+        <h3 className="filter-title">Search Filters</h3>
+
+        <div className="search-by">
+          <label className="section-label">Search By</label>
+          <div className="radio-group">
+            <label><input type="radio" checked={searchBy === "client"} onChange={() => setSearchBy("client")} /> Client</label>
+            <label><input type="radio" checked={searchBy === "email"} onChange={() => setSearchBy("email")} /> Email</label>
+            <label><input type="radio" checked={searchBy === "both"} onChange={() => setSearchBy("both")} /> Both</label>
+          </div>
         </div>
 
-        <div className="date-range">
-          <div className="date-input">
+        <div className="filter-grid">
+          {(searchBy === "client" || searchBy === "both") && (
+            <div className="query-input input-small">
+              <label>Client Name</label>
+              <input value={client} onChange={(e) => setClient(e.target.value)} />
+            </div>
+          )}
+
+          {(searchBy === "email" || searchBy === "both") && (
+            <div className="query-input input-large">
+              <label>Email IDs</label>
+              <textarea
+                rows="2"
+                value={emails}
+                onChange={(e) => setEmails(e.target.value)}
+                placeholder="user1@test.com, user2@test.com"
+              />
+            </div>
+          )}
+
+          <div className="query-input input-date">
             <label>Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              min={calendarMin}
-              max={calendarMax}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
+            <input type="date" value={startDate} max={calendarMax} onChange={(e) => setStartDate(e.target.value)} />
           </div>
 
-          <div className="date-input">
+          <div className="query-input input-date">
             <label>End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              min={calendarMin}
-              max={calendarMax}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
+            <input type="date" value={endDate} max={calendarMax} onChange={(e) => setEndDate(e.target.value)} />
           </div>
         </div>
 
-        <button className="btn primary-btn" onClick={handleSearch}>
-          {loading ? "Loading..." : "Search"}
-        </button>
+        <div className="action-row">
+          <button className="btn primary-btn" onClick={handleSearch} disabled={loading}>
+            {loading ? "Searching..." : "Search"}
+          </button>
+          <button className="btn secondary-btn" onClick={downloadExcel}>
+            Download Full Report (Excel)
+          </button>
+        </div>
       </div>
 
-      {/* Messages */}
+      {/* MESSAGES */}
       {error && <p className="admin-error">{error}</p>}
       {infoMsg && !error && <p className="admin-success">{infoMsg}</p>}
 
-      {/* Results table */}
-      {/* Admin Summary Table - Same Structure as SummaryTable.js */}
+      {/* RESULTS */}
       {results.length > 0 && (
         <table className="summary-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Client</th>
-              <th>Ticket</th>
-              <th>Ticket Desc</th>
-              <th>Category</th>
-              <th>Description</th>
-              <th>Hours</th>
-              <th>Billable</th>
+              <th>Client Name</th>
+              <th>Ticket Number</th>
+              <th>Ticket Description</th>
+              <th>Billable Hours</th>
+              <th>Non-Billable Hours</th>
+              <th>Task Description</th>
             </tr>
           </thead>
-
           <tbody>
-            {results.map((task, idx) => (
+            {results.map((row, idx) => (
               <tr key={idx}>
-                <td>{task.date}</td>
-                <td>{task.client}</td>
-                <td>{task.ticket}</td>
-                <td>{task.ticketDescription}</td>
-                <td>{task.category}</td>
-                <td>{task.description}</td>
-                <td>{task.hours}</td>
-                <td>{task.billable}</td>
+                <td>{row.client}</td>
+                <td>{row.ticket}</td>
+                <td>{row.ticketDescription}</td>
+                <td>{row.billableHours}</td>
+                <td>{row.nonBillableHours}</td>
+                <td>
+                  <ol className="task-list">
+                    {row.descriptions.map((desc, i) => (
+                      <li key={i}>{desc}</li>
+                    ))}
+                  </ol>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-
-      {results.length === 0 && !error && !infoMsg && (
-        <p style={{ opacity: 0.6 }}>
-          Enter client and date range, then click Search
-        </p>
-      )}
     </div>
   );
 };

@@ -96,12 +96,46 @@ WHERE email = :email
                                                    @Param("start") LocalDate start,
                                                    @Param("end") LocalDate end);
 
-  @Query("SELECT t FROM TaskEntity t WHERE t.client = :client AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y') BETWEEN :startDate AND :endDate")
+  @Query("""
+        SELECT t FROM TaskEntity t
+        WHERE t.client = :client
+          AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y')
+              BETWEEN :startDate AND :endDate
+    """)
   List<TaskEntity> getSummaryByClientAndDateRange(
           @Param("client") String client,
           @Param("startDate") LocalDate startDate,
           @Param("endDate") LocalDate endDate
   );
+
+  @Query("""
+        SELECT t FROM TaskEntity t
+        WHERE t.client = :client
+          AND t.userId IN :userIds
+          AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y')
+              BETWEEN :startDate AND :endDate
+    """)
+  List<TaskEntity> getSummaryByClientAndUserIdsAndDateRange(
+          @Param("client") String client,
+          @Param("userIds") List<Long> userIds,
+          @Param("startDate") LocalDate startDate,
+          @Param("endDate") LocalDate endDate
+  );
+
+  @Query("""
+        SELECT t FROM TaskEntity t
+        WHERE t.userId IN :userIds
+          AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y')
+              BETWEEN :startDate AND :endDate
+    """)
+  List<TaskEntity> findByUserIdsAndDateBetweenString(
+          @Param("userIds") List<Long> userIds,
+          @Param("startDate") LocalDate startDate,
+          @Param("endDate") LocalDate endDate
+  );
+
+  @Query("SELECT u.id FROM User u WHERE u.email IN :emails")
+  List<Long> findUserIdsByEmailIn(@Param("emails") List<String> emails);
 
 
 }
