@@ -386,5 +386,57 @@ public class TaskController {
 
             return ResponseEntity.ok(Map.of("data", updatedDTO));}
     }
+
+// ...
+
+    @GetMapping("admin-panel/by-client")
+    public ResponseEntity<Map<String, Object>> getByClient(
+            @RequestParam String client,
+            @RequestParam String startDate,
+            @RequestParam String endDate
+    )
+
+    {
+        if (client == null || client.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Client is required"));
+        }
+        if (startDate == null || startDate.isEmpty() || endDate == null || endDate.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Start date and end date are required"));
+        }
+
+        LocalDate startDt = LocalDate.parse(startDate, dbFormatter);
+        LocalDate endDt= LocalDate.parse(endDate, dbFormatter);
+
+        List<TaskEntity> tasks = taskRepository.getSummaryByClientAndDateRange(
+                client,
+                startDt,
+                endDt
+                        );
+
+
+    // Convert TaskEntity -> TaskDTO
+    List<TaskDTO> result = tasks.stream()
+            .map(t -> TaskDTO.builder()
+                    .id(t.getId())
+                    .client(t.getClient())
+                    .ticket(t.getTicket())
+                    .ticketDescription(t.getTicketDescription())
+                    .category(t.getCategory())
+                    .description(t.getDescription())
+                    .billable(t.getBillable())
+                    .hours(t.getHours())
+                    .date(t.getDate())
+                    .build())
+            .collect(Collectors.toList());
+        if(result.toArray().length > 0)
+    {
+        return ResponseEntity.ok(Map.of("data", result));
+    }
+        else if(result.toArray().length == 0){
+        return ResponseEntity.ok(Map.of("message","No Task Present for entered dates"));
+    }
+
+        return ResponseEntity.status(400).body(Map.of("message","Server Error"));
+}
 }
 

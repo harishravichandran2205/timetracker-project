@@ -1,118 +1,120 @@
+// src/pages/AdminPage.js
 import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/AdminPage.css";
 
 const AdminPage = () => {
-  const [mode, setMode] = useState("email");   // default email mode
-  const [query, setQuery] = useState("");       // email or client
+  const [client, setClient] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setErrorMsg] = useState("");       // must be string
+  const [error, setError] = useState("");
   const [infoMsg, setInfoMsg] = useState("");
 
-  const handleModeChange = (m) => {
-    setMode(m);
-    setQuery("");
-    setResults([]);
-    setErrorMsg("");
-    setInfoMsg("");
-  };
+  // ===== Date limits (max = today, no min for admin) =====
+  const today = new Date();
+  const calendarMax = today.toISOString().split("T")[0];
+  const calendarMin = ""; // no restriction for admin
+
+  const formatForBackend = (dateStr) => {
+      if (!dateStr) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const [yyyy, mm, dd] = dateStr.split("-");
+        return `${dd}-${mm}-${yyyy}`;
+      }
+      return dateStr;
+    };
 
   const handleSearch = async () => {
-    setErrorMsg(""); setInfoMsg(""); setResults([]);
+    setError("");
+    setInfoMsg("");
+    setResults([]);
 
-    if (!query.trim()) {
-      setErrorMsg(mode === "email" ? "Please enter Email" : "Please enter Client");
+    if (!client.trim()) {
+      setError("Please enter client name");
+      return;
+    }
+    if (!startDate || !endDate) {
+      setError("Please select both start and end dates");
       return;
     }
 
     const token = localStorage.getItem("token");
-    if (!token) return setErrorMsg("You are not logged in");
+    if (!token) {
+      setError("You are not logged in");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      let url = "", params = {};
 
-      if (mode === "email") {
-        url = `${API_BASE_URL}/api/admin/summary/by-user`;  // ✅ not by-email
-        params = { email: query.trim() };                  // ✅ controller expects "email"
-      } else {
-        url = `${API_BASE_URL}/api/admin/summary/by-client`;
-        params = { client: query.trim() };
-      }
+      const res = await axios.get(
+              `${API_BASE_URL}/api/admin-panel/by-client?client=${client}&startDate=${formatForBackend(
+                startDate
+              )}&endDate=${formatForBackend(endDate)}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
-
-      // because controller returns { data: [...] }
-      const data = Array.isArray(res.data?.data) ? res.data.data : [];
+      const data =Array.isArray(res.data?.data?.data)
+                          ? res.data.data.data
+                          : [];
       setResults(data);
 
-      if (data.length === 0) setInfoMsg("No effort records found for this input");
-      else if (res.data.message) setInfoMsg(res.data.message);
-
-    } catch (err) {
-        console.error("Admin summary error:", err);
-
-        const data = err.response?.data;
-        let msg = "Failed to fetch summary.";
-
-        // Case 1: backend returns plain string
-        if (typeof data === "string") {
-          msg = data;
-        }
-        // Case 2: backend returns {status, message, subErrors}
-        else if (data && typeof data === "object") {
-          if (typeof data.message === "string") {
-            msg = data.message;
-          } else if (Array.isArray(data.subErrors) && data.subErrors.length > 0) {
-            msg = data.subErrors[0]; // or JSON.stringify(data.subErrors)
-          }
-        }
-        // fallback
-        else if (err.message) {
-          msg = err.message;
-        }
-
-        setErrorMsg(msg); // ✅ only string goes into state
+      if (data.length === 0) {
+        setInfoMsg("No effort records found for this client and date range");
+      } else if (res.data.message) {
+        setInfoMsg(res.data.message);
       }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.log("test",err);
+      console.error("Admin summary error:", err);
+      setError("Failed to fetch summary");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="admin-page">
       <h2 className="page-title">Admin – Effort Summary</h2>
 
-      {/* Filter options */}
+      {/* Filters */}
       <div className="admin-filters">
-
-        <div className="mode-toggle">
-          <label>
-            <input type="radio" checked={mode === "email"}
-              onChange={() => handleModeChange("email")} />
-            <span>By Email</span>
-          </label>
-
-          <label>
-            <input type="radio" checked={mode === "client"}
-              onChange={() => handleModeChange("client")} />
-            <span>By Client</span>
-          </label>
-        </div>
-
         <div className="query-input">
-          <label>{mode === "email" ? "Email ID" : "Client Name"}</label>
-
+          <label>Client Name</label>
           <input
             type="text"
-            placeholder={mode === "email" ? "john@company.com" : "ENIA"}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ENIA"
+            value={client}
+            onChange={(e) => setClient(e.target.value)}
           />
+        </div>
+
+        <div className="date-range">
+          <div className="date-input">
+            <label>Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              min={calendarMin}
+              max={calendarMax}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+
+          <div className="date-input">
+            <label>End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              min={calendarMin}
+              max={calendarMax}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
         </div>
 
         <button className="btn primary-btn" onClick={handleSearch}>
@@ -120,28 +122,38 @@ const AdminPage = () => {
         </button>
       </div>
 
-      {/* Output messages */}
+      {/* Messages */}
       {error && <p className="admin-error">{error}</p>}
       {infoMsg && !error && <p className="admin-success">{infoMsg}</p>}
 
-      {/* Table only if results exist */}
+      {/* Results table */}
+      {/* Admin Summary Table - Same Structure as SummaryTable.js */}
       {results.length > 0 && (
-        <table className="admin-summary-table">
+        <table className="summary-table">
           <thead>
             <tr>
-              <th>User Id</th>
+              <th>Date</th>
               <th>Client</th>
               <th>Ticket</th>
-              <th>Total Hours</th>
+              <th>Ticket Desc</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Hours</th>
+              <th>Billable</th>
             </tr>
           </thead>
+
           <tbody>
-            {results.map((r, i) => (
-              <tr key={i}>
-                <td>{r.userId}</td>
-                <td>{r.client}</td>
-                <td>{r.ticket}</td>
-                <td>{r.totalHours}</td>
+            {results.map((task, idx) => (
+              <tr key={idx}>
+                <td>{task.date}</td>
+                <td>{task.client}</td>
+                <td>{task.ticket}</td>
+                <td>{task.ticketDescription}</td>
+                <td>{task.category}</td>
+                <td>{task.description}</td>
+                <td>{task.hours}</td>
+                <td>{task.billable}</td>
               </tr>
             ))}
           </tbody>
@@ -150,7 +162,9 @@ const AdminPage = () => {
 
 
       {results.length === 0 && !error && !infoMsg && (
-        <p style={{opacity:.6}}>Enter Email or Client and click Search</p>
+        <p style={{ opacity: 0.6 }}>
+          Enter client and date range, then click Search
+        </p>
       )}
     </div>
   );

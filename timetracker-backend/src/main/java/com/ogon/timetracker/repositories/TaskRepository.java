@@ -96,4 +96,12 @@ WHERE email = :email
                                                    @Param("start") LocalDate start,
                                                    @Param("end") LocalDate end);
 
+  @Query("SELECT t FROM TaskEntity t WHERE t.client = :client AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y') BETWEEN :startDate AND :endDate")
+  List<TaskEntity> getSummaryByClientAndDateRange(
+          @Param("client") String client,
+          @Param("startDate") LocalDate startDate,
+          @Param("endDate") LocalDate endDate
+  );
+
+
 }
