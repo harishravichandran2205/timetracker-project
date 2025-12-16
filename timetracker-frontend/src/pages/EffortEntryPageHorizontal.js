@@ -94,24 +94,50 @@ const EffortEntryPageHorizontal = () => {
     else setUsername(storedUsername || "User");
   }, [navigate]);
 
+  const optionsFetchedRef = useRef(false);
+
   useEffect(() => {
-    const fetchOptions = async () => {
+    const fetchClientOptions = async () => {
+      if (optionsFetchedRef.current) return;
+      optionsFetchedRef.current = true;
+
       try {
         const token = localStorage.getItem("token");
+
         const [clientsRes, categoriesRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/options/clients`, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(`${API_BASE_URL}/api/options/categories`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(
+            `${API_BASE_URL}/api/admin-panel/client-codes`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          ),
+          axios.get(
+            `${API_BASE_URL}/api/options/categories`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
         ]);
-        setClientOptions(clientsRes.data?.data || ["ENIA"]);
-        setCategoryOptions(categoriesRes.data?.data || ["Test"]);
+
+        console.log("CLIENT RESPONSE:", clientsRes.data);
+
+        const extractArray = (res) => {
+          if (Array.isArray(res?.data)) return res.data;
+          if (Array.isArray(res?.data?.data)) return res.data.data;
+          if (Array.isArray(res)) return res;
+          return [];
+        };
+
+        setClientOptions(extractArray(clientsRes));
+        setCategoryOptions(extractArray(categoriesRes));
+
       } catch (err) {
-        console.error(err);
-        setPopup({ message: "Failed to load options", type: "error" });
-        setTimeout(() => setPopup({ message: "", type: "" }), 3000);
+        console.error("Failed to fetch options", err);
+        setClientOptions([]);
+        setCategoryOptions([]);
       }
     };
-    fetchOptions();
+
+    fetchClientOptions();
   }, []);
+
+
 
   const createNewRow = () => ({
     rowId: null,

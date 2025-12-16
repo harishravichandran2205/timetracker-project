@@ -54,11 +54,13 @@ const HorizontalEffortTable = ({
           {rows.map((row, rowIndex) => (
             <tr key={rowIndex}>
               <td>
-                <select
-                  value={row.client}
-                  onChange={(e) => handleChange(rowIndex, "client", e.target.value)}
-                >
+                <select value={row.client} onChange={(e) => handleChange(rowIndex, "client", e.target.value)}>
                   <option value="">Select</option>
+
+                  {clients.length === 0 && (
+                    <option disabled>No clients found</option>
+                  )}
+
                   {clients.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}

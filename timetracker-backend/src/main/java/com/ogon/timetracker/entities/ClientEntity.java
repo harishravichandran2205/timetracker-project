@@ -16,9 +16,9 @@ public class ClientEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "ClientCode" )
+    @Column(name = "ClientCode", unique = true )
     private String clientCd;
 
-    @Column(name = "ClientName" )
+    @Column(name = "ClientName", unique = true )
     private String clientName;
 }

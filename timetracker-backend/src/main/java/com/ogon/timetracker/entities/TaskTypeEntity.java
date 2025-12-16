@@ -5,18 +5,26 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 @Entity
-@Builder
+@Table(
+        name = "task_type_entity",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"task_name", "client_id"})
+        }
+)
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class TaskTypeEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "TaskName" )
+    @Column(name = "task_name", nullable = false)
     private String taskName;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    private ClientEntity client;
 }

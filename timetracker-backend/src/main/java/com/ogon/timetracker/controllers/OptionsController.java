@@ -10,11 +10,7 @@ import java.util.List;
 @RequestMapping("/api/options")
 public class OptionsController {
 
-    @GetMapping("/clients")
-    public List<String> getClients() {
-        // Hardcoded for now
-        return List.of("ENIA", "PHG", "PRIS");
-    }
+
 
     @GetMapping("/categories")
     public List<String> getCategories() {
