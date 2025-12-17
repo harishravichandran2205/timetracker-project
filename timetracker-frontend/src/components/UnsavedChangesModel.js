@@ -8,13 +8,11 @@ const UnsavedChangesModal = ({ visible, onConfirm, unSave, onCancel }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <p>You have unsaved changes! Do You Want to Save Data?</p>
+        <p>You have unsaved changes! Do you want to leave without saving the data?</p>
         <div className="modal-actions">
-          <button className="btn confirm-btn" onClick={onConfirm}>
-            Yes
-          </button>
+
            <button className="btn unSave-btn" onClick={unSave}>
-             No
+             Yes
             </button>
           <button className="btn cancel-btn" onClick={onCancel}>
             Cancel

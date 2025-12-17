@@ -28,6 +28,7 @@ const EffortEntryPageHorizontal = () => {
   const [showModal, setShowModal] = useState(false);
   const [showBottomSave, setShowBottomSave] = useState(false);
   const tableWrapperRef = useRef(null);
+  const [savedRowsSnapshot, setSavedRowsSnapshot] = useState([]);
 
   // ✅ Helpers
   const formatForBackend = (dmy) => {
@@ -410,11 +411,11 @@ const EffortEntryPageHorizontal = () => {
    const payload = rows.map((row) => {
      const normalizedHoursByDate = {};
      for (const [key, val] of Object.entries(row.hoursByDate || {})) {
-       if (val && val.toString().trim() !== "") {
          const normalizedKey = toDMY(key);
-         normalizedHoursByDate[normalizedKey] = val;
-       }
-     }
+        normalizedHoursByDate[normalizedKey] =
+        val == null || val.toString().trim() === "" ? 0 : val;
+        }
+
 
      return {
        rowId: row.rowId || null,
@@ -465,6 +466,7 @@ const EffortEntryPageHorizontal = () => {
 
    // ✅ Send to backend
    try {
+    console.log("HOURS PAYLOAD", payload.map(p => p.hoursByDate));
      const response = await axios.post(
        `${API_BASE_URL}/api/tasks-new`,
        payload,
@@ -529,7 +531,12 @@ const EffortEntryPageHorizontal = () => {
        hoursByDate: entry.hoursByDate || {},
 
      }));
-     setRows(mappedRows.length > 0 ? mappedRows : [createNewRow()]);
+     const finalRows = mappedRows.length > 0 ? mappedRows : [createNewRow()];
+
+     setRows(finalRows);
+
+     // ✅ SNAPSHOT MUST MATCH ROWS
+     setSavedRowsSnapshot(JSON.parse(JSON.stringify(finalRows)));
      if(showMessage){
         showPopup(response.data.data.message, "success");
      }
@@ -583,8 +590,9 @@ const handleDescriptionCancel = () => {
   }, [mode, dateRange.start, dateRange.end]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unsaved changes + modal logic
-  const hasUnsavedChanges = () =>
-    rows.some((r) => Object.values(r.hoursByDate || {}).some((v) => v && v.toString().trim() !== ""));
+  const hasUnsavedChanges = () => {
+    return JSON.stringify(rows) !== JSON.stringify(savedRowsSnapshot);
+  };
 
   const handleNavClick = (path) => {
     if (hasUnsavedChanges()) {

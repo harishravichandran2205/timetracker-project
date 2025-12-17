@@ -2,7 +2,7 @@
   padding: 24px;
   background: #f4f6f9;
   min-height: 100vh;
-  font-family: "Segoe UI", sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 .filter-card {
@@ -20,7 +20,9 @@
 }
 
 .section-label {
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 600;
+  color: #004aad;
   margin-bottom: 6px;
   display: block;
 }
@@ -42,10 +44,10 @@
 }
 
 .filter-grid {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: flex-end;
+   display: flex;
+    gap: 24px;           /* increase spacing */
+    align-items: flex-end;
+    flex-wrap: wrap;
 }
 
 .query-input label {
@@ -62,6 +64,8 @@
   border-radius: 6px;
   border: 1px solid #d0d5dd;
   font-size: 14px;
+  display: flex;
+   flex-direction: column;
 }
 
 .query-input textarea {
@@ -70,13 +74,15 @@
 
 /* WIDTH CONTROL */
 .input-small { width: 220px; }
-.input-large { width: 420px; }
+.input-large { width: 360px; }
 .input-date  { width: 160px; }
 
 .action-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 16px;
+    margin-left: 20px;
 }
 
 .btn {

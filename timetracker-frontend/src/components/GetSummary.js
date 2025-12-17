@@ -3,10 +3,12 @@ import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "../pages/css/AdminPage.css";
+import "../pages/css/SummaryPage.css";
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
+import { useNavigate } from "react-router-dom";
 
-const AdminPage = () => {
+const GetSummary = () => {
   const [searchBy, setSearchBy] = useState("client");
   const [client, setClient] = useState("");
   const [emails, setEmails] = useState("");
@@ -19,6 +21,7 @@ const AdminPage = () => {
 
   const today = new Date();
   const calendarMax = today.toISOString().split("T")[0];
+  const navigate = useNavigate();
 
   const formatForBackend = (dateStr) => {
     if (!dateStr) return "";
@@ -198,15 +201,18 @@ const AdminPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const data =Array.isArray(res.data?.data?.data)
-                          ? res.data.data.data
-                          : [];
-      const summaryData = buildSummaryData(data);
-      setResults(summaryData);
+      const summaryData = res?.data?.data || [];
 
-      if (data.length === 0) {
-        setInfoMsg("No effort records found for entered criteria");
-      }
+      console.log("Summary Data:", summaryData);
+
+     if (summaryData.length === 0) {
+       setInfoMsg("No effort records found for entered criteria");
+       return;
+     }
+
+     navigate("/admin/filtered-summary", {
+       state: { results: summaryData }
+     });
     } catch (err) {
       setError("Failed to fetch summary");
     } finally {
@@ -219,7 +225,6 @@ const AdminPage = () => {
 
       {/* FILTER CARD */}
       <div className="filter-card">
-        <h3 className="filter-title">Search Filters</h3>
 
         <div className="search-by">
           <label className="section-label">Search By</label>
@@ -229,14 +234,14 @@ const AdminPage = () => {
             <label><input type="radio" checked={searchBy === "both"} onChange={() => setSearchBy("both")} /> Both</label>
           </div>
         </div>
-
-        <div className="filter-grid">
-          {(searchBy === "client" || searchBy === "both") && (
-            <div className="query-input input-small">
-              <label>Client Name</label>
-              <input value={client} onChange={(e) => setClient(e.target.value)} />
-            </div>
-          )}
+        <div className="date-range-container" >
+            <div className="filter-grid">
+              {(searchBy === "client" || searchBy === "both") && (
+                <div className="query-input input-small">
+                  <label>Client Name</label>
+                  <textarea rows="2" value={client} onChange={(e) => setClient(e.target.value)} />
+                </div>
+              )}
 
           {(searchBy === "email" || searchBy === "both") && (
             <div className="query-input input-large">
@@ -250,67 +255,32 @@ const AdminPage = () => {
             </div>
           )}
 
-          <div className="query-input input-date">
-            <label>Start Date</label>
-            <input type="date" value={startDate} max={calendarMax} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
+              <div className="query-input input-date">
+                <label>Start Date</label>
+                <input type="date" value={startDate} max={calendarMax} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
 
-          <div className="query-input input-date">
-            <label>End Date</label>
-            <input type="date" value={endDate} max={calendarMax} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
-        </div>
+              <div className="query-input input-date">
+                <label>End Date</label>
+                <input type="date" value={endDate} max={calendarMax} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
+            </div>
 
-        <div className="action-row">
-          <button className="btn primary-btn" onClick={handleSearch} disabled={loading}>
-            {loading ? "Searching..." : "Search"}
-          </button>
-          <button className="btn secondary-btn" onClick={downloadExcel}>
-            Download Full Report (Excel)
-          </button>
-        </div>
+            <div className="action-row">
+              <button className="btn primary-btn" onClick={handleSearch} disabled={loading}>
+                {loading ? "Searching..." : "Search"}
+              </button>
+              <button className="btn secondary-btn" onClick={downloadExcel}>
+                Download Full Report
+              </button>
+            </div>
+       </div>
       </div>
 
-      {/* MESSAGES */}
-      {error && <p className="admin-error">{error}</p>}
-      {infoMsg && !error && <p className="admin-success">{infoMsg}</p>}
 
-      {/* RESULTS */}
-      {results.length > 0 && (
-        <table className="summary-table">
-          <thead>
-            <tr>
-              <th>Client Name</th>
-              <th>Ticket Number</th>
-              <th>Ticket Description</th>
-              <th>Billable Hours</th>
-              <th>Non-Billable Hours</th>
-              <th>Task Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((row, idx) => (
-              <tr key={idx}>
-                <td>{row.client}</td>
-                <td>{row.ticket}</td>
-                <td>{row.ticketDescription}</td>
-                <td>{row.billableHours}</td>
-                <td>{row.nonBillableHours}</td>
-                <td>
-                  <ol className="task-list">
-                    {row.descriptions.map((desc, i) => (
-                      <li key={i}>{desc}</li>
-                    ))}
-                  </ol>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
 
     </div>
   );
 };
 
-export default AdminPage;
+export default GetSummary;

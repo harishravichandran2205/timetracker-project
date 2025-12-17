@@ -1,5 +1,6 @@
 package com.ogon.timetracker.controllers;
 
+import com.ogon.timetracker.dto.AdminSummaryDTO;
 import com.ogon.timetracker.dto.TaskDTO;
 import com.ogon.timetracker.entities.TaskEntity;
 import com.ogon.timetracker.rendererer.TimeTrackerRenderer;
@@ -133,6 +134,7 @@ public class TaskController {
 
                     // 2. Update existing dates
                     for (TaskEntity existing : existingRows) {
+                        boolean rowChanged = false; // ✅ NEW FLAG
                         String date = existing.getDate();
 
                         Object newHoursObj = hoursByDate.get(date);
@@ -142,6 +144,7 @@ public class TaskController {
 
                             if (Double.compare(existing.getHours(), newHours) != 0) {
                                 existing.setHours(newHours);
+                                rowChanged = true;
                                 updateLogs.add("Updated hours | rowId=" + rowId + " date=" + date);
                             }
                         }
@@ -158,7 +161,9 @@ public class TaskController {
                             existing.setLastName(lastName);
                         }
 
-                        toUpdate.add(existing);
+                        if (rowChanged) {
+                            toUpdate.add(existing);
+                        }
                     }
 
                     // 3. Insert NEW DATES not present in DB
@@ -233,12 +238,27 @@ public class TaskController {
         if (!toInsert.isEmpty()) taskRepository.saveAll(toInsert);
         if (!toUpdate.isEmpty()) taskRepository.saveAll(toUpdate);
 
+        String message;
+
+        if (!toInsert.isEmpty() && toUpdate.isEmpty()) {
+            message = "Task(s) saved successfully";
+        }
+        else if (toInsert.isEmpty() && !toUpdate.isEmpty()) {
+            message = "Task(s) updated successfully";
+        }
+        else if (!toInsert.isEmpty() && !toUpdate.isEmpty()) {
+            message = "Task(s) saved and updated successfully";
+        }
+        else {
+            message = "Task(s) already saved";
+        }
+
         return ResponseEntity.ok(
                 Map.of(
                         "inserted", toInsert.size(),
                         "updated", toUpdate.size(),
                         "updateLogs", updateLogs,
-                        "message", "Tasks Saved successfully"
+                        "message", message
                 )
         );
     }
@@ -446,29 +466,52 @@ public class TaskController {
                 );
             }
         }
+        List<AdminSummaryDTO> summary = buildSummaryData(tasks);
 
-        // ===== Convert Entity → DTO =====
-        List<TaskDTO> result = tasks.stream()
-                .map(t -> TaskDTO.builder()
-                        .id(t.getId())
-                        .client(t.getClient())
-                        .ticket(t.getTicket())
-                        .ticketDescription(t.getTicketDescription())
-                        .category(t.getCategory())
-                        .description(t.getDescription())
-                        .billable(t.getBillable())
-                        .hours(t.getHours())
-                        .date(t.getDate())
-                        .build())
-                .collect(Collectors.toList());
 
-        // ===== UI LIMIT (ONLY WHEN NOT EXPORTING) =====
-        if (!exportAll && result.size() > 10) {
-            result = result.subList(0, 10);   // UI restriction
+        return ResponseEntity.ok(Map.of("data", summary));
+    }
+    private List<AdminSummaryDTO> buildSummaryData(List<TaskEntity> tasks) {
+
+        Map<String, AdminSummaryDTO> map = new LinkedHashMap<>();
+
+        for (TaskEntity task : tasks) {
+
+            if (task == null || task.getTicket() == null) continue;
+
+            String ticket = task.getTicket();
+
+            AdminSummaryDTO summary = map.get(ticket);
+
+            if (summary == null) {
+                summary = AdminSummaryDTO.builder()
+                        .client(task.getClient())
+                        .ticket(task.getTicket())
+                        .ticketDescription(task.getTicketDescription())
+                        .billableHours(0)
+                        .nonBillableHours(0)
+                        .descriptions(new HashSet<>())
+                        .build();
+
+                map.put(ticket, summary);
+            }
+
+            double hours = task.getHours() != null ? task.getHours() : 0;
+
+            if ("Yes".equalsIgnoreCase(task.getBillable())) {
+                summary.setBillableHours(summary.getBillableHours() + hours);
+            } else {
+                summary.setNonBillableHours(summary.getNonBillableHours() + hours);
+            }
+
+            if (task.getDescription() != null && !task.getDescription().isBlank()) {
+                summary.getDescriptions().add(task.getDescription().trim());
+            }
         }
 
-        return ResponseEntity.ok(Map.of("data", result));
+        return new ArrayList<>(map.values());
     }
+
 
 
 }

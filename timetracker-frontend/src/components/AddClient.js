@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/AddClient.css";
+import "../pages/css/AdminPage.css";
 
 const AddClient = () => {
   const [action, setAction] = useState("add");
@@ -157,7 +158,7 @@ const AddClient = () => {
 
   /* ================= UI ================= */
   return (
-    <div className="client-card">
+    <div className="filter-card">
       <h3>Client Management</h3>
 
       {/* ACTION */}
