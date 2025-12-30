@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
-import "./css/AddClient.css";
+import "./css/AddTaskType.css";
 
 const AddTaskType = () => {
   const [action, setAction] = useState("add");
@@ -137,6 +137,7 @@ const AddTaskType = () => {
           <div className="radio-group">
             {["add", "modify", "delete"].map((a) => (
               <label key={a}>
+
                 <input
                   type="radio"
                   checked={action === a}
@@ -152,29 +153,39 @@ const AddTaskType = () => {
           </div>
 
           {/* CLIENT */}
+          <div className="task-type-row">
+          <div className="query-input input-small">
           <select value={clientCode} onChange={(e) => setClientCode(e.target.value)}>
             <option value="">Select Client</option>
             {clientCodes.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+          </div>
+
 
           {/* ADD */}
           {action === "add" && (
+
+            <div className="query-input input-small">
             <input
               placeholder="Task Type"
               value={taskType}
               onChange={(e) => setTaskType(e.target.value)}
             />
+            </div>
+
           )}
 
           {/* MODIFY / DELETE */}
           {(action === "modify" || action === "delete") && (
+            <div className="query-input input-small">
             <select
               value={taskType}
               onChange={(e) => setTaskType(e.target.value)}
               disabled={!clientCode}
             >
+
               <option value="">
                 {!clientCode
                   ? "Select Client First"
@@ -187,15 +198,18 @@ const AddTaskType = () => {
                 <option key={i} value={t}>{t}</option>
               ))}
             </select>
+            </div>
           )}
 
           {/* MODIFY NEW NAME */}
           {action === "modify" && (
+            <div className="query-input input-small">
             <input
               placeholder="New Task Type"
               value={newTaskType}
               onChange={(e) => setNewTaskType(e.target.value)}
             />
+            </div>
           )}
 
           <button className="btn primary-btn" onClick={handleSubmit}>
@@ -205,6 +219,7 @@ const AddTaskType = () => {
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
         </div>
+    </div>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/AddUserRole.css";
-import "./css/AddClient.css";
+
 
 const AddUserRole = () => {
    const [email, setEmail] = useState("");
@@ -45,22 +45,25 @@ const AddUserRole = () => {
     <div className="add-client-page">
     <div className="filter-card">
 
-      <h3>Add User Role</h3>
-      <label className="section-label">Search By</label>
 
+      <label className="section-label">Add User Role</label>
+       <div className="user-role-row">
+       <div className="query-input input-large">
        <input
               type="email"
               placeholder="User Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-
+       </div>
+      <div className="query-input input-small">
       <input
         type="text"
         placeholder="Role (ADMIN / USER / MANAGER)"
         value={role}
         onChange={(e) => setRole(e.target.value.toUpperCase())}
       />
+      </div>
 
       <button className="btn primary-btn" onClick={handleSubmit}>
         SAVE
@@ -68,6 +71,7 @@ const AddUserRole = () => {
 
       {error && <p className="error">{error}</p>}
       {message && <p className="success">{message}</p>}
+    </div>
     </div>
     </div>
   );

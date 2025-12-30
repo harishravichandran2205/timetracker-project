@@ -25,3 +25,10 @@
 .input-small { width: 220px; }
 .input-large { width: 360px; }
 .input-date  { width: 160px; }
+
+.task-type-row {
+  display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+}
