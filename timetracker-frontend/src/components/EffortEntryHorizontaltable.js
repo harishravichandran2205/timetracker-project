@@ -1,21 +1,20 @@
-
-import React , { forwardRef } from "react";
+import React from "react";
 import { PiNotePencilFill } from "react-icons/pi";
 
 
 const HorizontalEffortTable = ({
-  rows,
-  clients,
-  categories,
-  dateColumns,
+  rows = [],
+  clients = [],
+  categories = [], // kept as-is
+  dateColumns = [],
+  taskTypeOptions = [], // SAFE DEFAULT
   handleChange,
   handleDeleteRow,
   handleAddRow,
   canDeleteRows,
   onEditDescription,
   showValidation,
-
-},ref ) => {
+}) => {
   /** 🟩 Check if row is filled (so new empty row won't highlight) */
   const isRowUsed = (row) => {
     const hasHours = Object.values(row.hoursByDate || {}).some(
@@ -98,53 +97,74 @@ const HorizontalEffortTable = ({
                 </div>
               </td>
 
-
-              <td>
-                <select
-                  value={row.category}
-                  onChange={(e) => handleChange(rowIndex, "category", e.target.value)}
-                >
-                  <option value="">Select</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </td>
-              <td>
-                <select
-                  value={row.billable}
-                  onChange={(e) => handleChange(rowIndex, "billable", e.target.value)}
-                >
-                  <option value="">Select</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-              </td>
-              {dateColumns.map((date) => (
-                <td key={date} className="date-col">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={row.hoursByDate?.[date] || ""}
+                {/* CATEGORY */}
+                <td>
+                  <select
+                    key={`category-${rowIndex}-${taskTypeOptions[rowIndex]?.length || 0}`}
+                    value={row.category ?? ""}
                     onChange={(e) =>
-                      handleChange(rowIndex, "hoursByDate", {
-                        ...row.hoursByDate,
-                        [date]: e.target.value,
-                      })
+                      handleChange(rowIndex, "category", e.target.value)
                     }
-                  />
-                </td>
-              ))}
-              <td>
-                <div className="action-buttons">
-                  <button
-                    className="plus-btn"
-                    type="button"
-                    onClick={() => handleAddRow(rowIndex)}
+                    disabled={!row.client}
                   >
-                    +
-                  </button>
+                    <option value="">
+                      {!row.client
+                        ? "Select Client First"
+                        : (taskTypeOptions[rowIndex]?.length ?? 0) === 0
+                        ? "No Categories Found"
+                        : "Select Category"}
+                    </option>
+
+                    {(taskTypeOptions[rowIndex] || []).map((t, i) => (
+                      <option key={`${rowIndex}-${i}`} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+
+                {/* BILLABLE */}
+                <td>
+                  <select
+                    value={row.billable ?? ""}
+                    onChange={(e) =>
+                      handleChange(rowIndex, "billable", e.target.value)
+                    }
+                  >
+                    <option value="">Select</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </td>
+
+                {/* HOURS */}
+                {dateColumns.map((date) => (
+                  <td key={date} className="date-col">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={row.hoursByDate?.[date] ?? ""}
+                      onChange={(e) =>
+                        handleChange(rowIndex, "hoursByDate", {
+                          ...row.hoursByDate,
+                          [date]: e.target.value,
+                        })
+                      }
+                    />
+                  </td>
+                ))}
+
+                {/* ACTIONS */}
+                <td>
+                  <div className="action-buttons">
+                    <button
+                      className="plus-btn"
+                      type="button"
+                      onClick={() => handleAddRow(rowIndex)}
+                    >
+                      +
+                    </button>
 
                   <button
                     className="delete-btn"

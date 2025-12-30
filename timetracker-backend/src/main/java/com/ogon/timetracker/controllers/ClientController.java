@@ -2,10 +2,14 @@ package com.ogon.timetracker.controllers;
 
 import com.ogon.timetracker.dto.ClientReqDto;
 import com.ogon.timetracker.dto.TaskTypeDto;
+import com.ogon.timetracker.dto.UserRoleDto;
 import com.ogon.timetracker.entities.ClientEntity;
 import com.ogon.timetracker.entities.TaskTypeEntity;
+import com.ogon.timetracker.entities.User;
+import com.ogon.timetracker.enums.Role;
 import com.ogon.timetracker.repositories.ClientRepository;
 import com.ogon.timetracker.repositories.TaskTypeRepository;
+import com.ogon.timetracker.repositories.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +23,15 @@ public class ClientController {
 
     private final ClientRepository clientRepository;
 
+    private final UserRepository userRepository;
+
     private final TaskTypeRepository taskTypeRepository;
 
     public ClientController(ClientRepository clientRepository,
-                            TaskTypeRepository taskTypeRepository) {
+                            TaskTypeRepository taskTypeRepository, UserRepository userRepository) {
         this.clientRepository = clientRepository;
         this.taskTypeRepository = taskTypeRepository;
+        this.userRepository = userRepository;
     }
 
     // ===== ADD =====
@@ -250,8 +257,53 @@ public class ClientController {
         return ResponseEntity.ok(taskNames); // 🔥 RETURN ARRAY ONLY
     }
 
+    @PostMapping("/user-role")
+    public ResponseEntity<?> addUserRole(@RequestBody UserRoleDto req) {
 
+        if (req.getEmail() == null || req.getEmail().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User email is required"));
+        }
 
+        if (req.getRole() == null || req.getRole().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Role is required"));
+        }
 
+        User user = userRepository
+                .findByEmailIgnoreCase(req.getEmail())
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User not found"));
+        }
+
+        Role role;
+        try {
+            role = Role.valueOf(req.getRole().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Invalid role"));
+        }
+
+        // 🔥 DUPLICATE CHECK
+        if (user.getRoles().contains(role)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "User already has this role"));
+        }
+
+        user.getRoles().add(role);
+        userRepository.save(user);
+
+        return ResponseEntity.ok(
+                Map.of("message", "Role added successfully")
+        );
+    }
 }
+
+
+
+
+
 

@@ -1,42 +1,69 @@
 import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
+import "./css/AddClient.css";
 
 const AddUserRole = () => {
-  const [roleName, setRoleName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const handleSubmit = async () => {
-    if (!roleName.trim()) {
-      setMessage("Role name is required");
+    setError("");
+    setMessage("");
+
+    if (!email.trim()) {
+      setError("User email is required");
+      return;
+    }
+
+    if (!role.trim()) {
+      setError("Role is required");
       return;
     }
 
     try {
-      await axios.post(`${API_BASE_URL}/api/admin/user-role`, {
-        roleName
-      });
-      setMessage("User role added successfully");
-      setRoleName("");
+      const token = localStorage.getItem("token");
+
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin-panel/user-role`,
+        { email, role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setMessage(res.data?.message || "Role added successfully");
+      setEmail("");
+      setRole("");
     } catch (err) {
-      setMessage("Failed to add role");
+      setError(err.response?.data?.message || "Failed to add role");
     }
   };
 
   return (
-    <div className="admin-card">
-      <h3>Add User Role</h3>
+    <div className="client-card">
+      <h3>User Role Management</h3>
+
+      <input
+        type="email"
+        placeholder="User Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
 
       <input
         type="text"
-        placeholder="Enter role name"
-        value={roleName}
-        onChange={(e) => setRoleName(e.target.value)}
+        placeholder="Role (ADMIN / USER / MANAGER)"
+        value={role}
+        onChange={(e) => setRole(e.target.value.toUpperCase())}
       />
 
-      <button onClick={handleSubmit}>Add Role</button>
+      <button className="btn primary-btn" onClick={handleSubmit}>
+        SAVE
+      </button>
 
-      {message && <p>{message}</p>}
+      {error && <p className="error">{error}</p>}
+      {message && <p className="success">{message}</p>}
     </div>
   );
 };

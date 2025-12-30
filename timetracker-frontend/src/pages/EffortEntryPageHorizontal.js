@@ -73,6 +73,55 @@ const EffortEntryPageHorizontal = () => {
     return raw;
   };
 
+  const [taskTypeOptions, setTaskTypeOptions] = useState([[]]);
+
+  useEffect(() => {
+    setTaskTypeOptions((prev) => {
+      const copy = Array.isArray(prev) ? [...prev] : [];
+
+      // ensure one entry per row
+      while (copy.length < rows.length) {
+        copy.push([]);
+      }
+
+      // trim if rows removed
+      if (copy.length > rows.length) {
+        copy.length = rows.length;
+      }
+
+      return copy;
+    });
+  }, [rows.length]);
+
+
+
+  const fetchTaskTypesForRow = async (rowIndex, clientCode) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(
+        `${API_BASE_URL}/api/admin-panel/task-types/${clientCode}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const list = Array.isArray(res.data.data) ? res.data.data  : [];
+
+      setTaskTypeOptions((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const copy = [...safePrev];
+        copy[rowIndex] = list;
+        console.log("✅ res:",copy);
+        return copy;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
+
+
+
   // Check if table height exceeds viewport height
   useLayoutEffect(() => {
     const checkTableHeight = () => {
@@ -119,7 +168,7 @@ const EffortEntryPageHorizontal = () => {
         console.log("CLIENT RESPONSE:", clientsRes.data);
 
         const extractArray = (res) => {
-          if (Array.isArray(res?.data)) return res.data;
+          if (Array.isArray(res?.data.data)) return res.data.data;
           if (Array.isArray(res?.data?.data)) return res.data.data;
           if (Array.isArray(res)) return res;
           return [];
@@ -275,9 +324,21 @@ const EffortEntryPageHorizontal = () => {
   const handleChange = (rowIndex, field, value) => {
     const newRows = [...rows];
     newRows[rowIndex][field] = value;
+
+    // 🔥 RESET category immediately
+    if (field === "client") {
+      newRows[rowIndex].category = "";
+    }
+
     setRows(newRows);
     setIsDirty(true);
+
+    // 🔥 FETCH TASK TYPES AFTER ROW UPDATE
+    if (field === "client" && value) {
+      fetchTaskTypesForRow(rowIndex, value);
+    }
   };
+
 
   const handleDeleteRow = (index) => {
     // ❌ Block delete if only 1 row will remain
@@ -311,8 +372,11 @@ const EffortEntryPageHorizontal = () => {
   // global flag: can we delete rows at all?
   const canDeleteRows = rows.length > 1 && !hasPersisted;
 
-  const handleAddRow = () => setRows((prev) => [...prev, createNewRow()]);
-//  const handleDeleteRow = (index) => setRows((prev) => prev.filter((_, i) => i !== index));
+  const handleAddRow = () => {
+    setRows((prev) => [...prev, createNewRow()]);
+    setTaskTypeOptions((prev) => [...prev, []]); // 🔥 keep index alignment
+  };
+
 
   const showPopup = (msg, type = "success") => {
     setPopup({ message: msg, type });
@@ -413,8 +477,9 @@ const EffortEntryPageHorizontal = () => {
      for (const [key, val] of Object.entries(row.hoursByDate || {})) {
          const normalizedKey = toDMY(key);
         normalizedHoursByDate[normalizedKey] =
-        val == null || val.toString().trim() === "" ? 0 : val;
-        }
+        if (val == null || val.toString().trim() === "") {
+             continue; // 🔥 do not send empty hours
+           }
 
 
      return {
@@ -676,6 +741,7 @@ const handleDescriptionCancel = () => {
                   rows={rows}
                   clients={clientOptions}
                   categories={categoryOptions}
+                  taskTypeOptions={taskTypeOptions}
                   dateColumns={getDateColumns()}
                   handleChange={handleChange}
                   handleDeleteRow={handleDeleteRow}
