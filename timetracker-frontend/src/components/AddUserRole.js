@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
+import "./css/AddUserRole.css";
 import "./css/AddClient.css";
 
 const AddUserRole = () => {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+   const [email, setEmail] = useState("");
+    const [role, setRole] = useState("");
+    const [error, setError] = useState("");
+    const [message, setMessage] = useState("");
 
   const handleSubmit = async () => {
     setError("");
@@ -41,15 +42,18 @@ const AddUserRole = () => {
   };
 
   return (
-    <div className="client-card">
-      <h3>User Role Management</h3>
+    <div className="add-client-page">
+    <div className="filter-card">
 
-      <input
-        type="email"
-        placeholder="User Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+      <h3>Add User Role</h3>
+      <label className="section-label">Search By</label>
+
+       <input
+              type="email"
+              placeholder="User Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
       <input
         type="text"
@@ -64,6 +68,7 @@ const AddUserRole = () => {
 
       {error && <p className="error">{error}</p>}
       {message && <p className="success">{message}</p>}
+    </div>
     </div>
   );
 };

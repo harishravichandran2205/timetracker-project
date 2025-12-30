@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/AddClient.css";
-import "../pages/css/AdminPage.css";
+
 
 const AddClient = () => {
   const [action, setAction] = useState("add");
@@ -157,95 +157,150 @@ const AddClient = () => {
   };
 
   /* ================= UI ================= */
-  return (
-    <div className="filter-card">
-      <h3>Client Management</h3>
 
-      {/* ACTION */}
-      <div className="radio-group">
-        {["add", "modify", "delete"].map((a) => (
-          <label key={a}>
-            <input
-              type="radio"
-              checked={action === a}
-              onChange={() => {
-                setAction(a);
-                setError("");
-                setMessage("");
-                setAddClientCode("");
-                setAddClientName("");
-                setOldClientCode("");
-                setOldClientName("");
-                setNewClientCode("");
-                setNewClientName("");
-              }}
-            />
-            {a.toUpperCase()}
-          </label>
-        ))}
-      </div>
 
-      {/* ADD */}
-      {action === "add" && (
-        <>
-          <input
-            placeholder="Client Code"
-            value={addClientCode}
-            onChange={(e) => setAddClientCode(e.target.value.toUpperCase())}
-          />
-          <input
-            placeholder="Client Name"
-            value={addClientName}
-            onChange={(e) => setAddClientName(e.target.value)}
-          />
-        </>
-      )}
+    return (
+      <div className="add-client-page">
+        <div className="filter-card">
 
-      {/* MODIFY / DELETE */}
-      {(action === "modify" || action === "delete") && (
-        <>
-          <select
-            value={oldClientCode}
-            onChange={(e) => setOldClientCode(e.target.value)}
-          >
-            <option value="">Select Client Code</option>
-            {clientCodes.map((c) => (
-              <option key={c} value={c}>{c}</option>
+          <label className="section-label">Client Management</label>
+
+          {/* ACTION */}
+          <div className="radio-group">
+            {["add", "modify", "delete"].map((a) => (
+              <label key={a}>
+                <input
+                  type="radio"
+                  checked={action === a}
+                  onChange={() => {
+                    setAction(a);
+                    setError("");
+                    setMessage("");
+                    setAddClientCode("");
+                    setAddClientName("");
+                    setOldClientCode("");
+                    setOldClientName("");
+                    setNewClientCode("");
+                    setNewClientName("");
+                  }}
+                />
+                {a.toUpperCase()}
+              </label>
             ))}
-          </select>
+          </div>
 
-          <input
-            placeholder="Client Name"
-            value={oldClientName}
-            disabled
-          />
-        </>
-      )}
+          {/* ADD */}
+          {action === "add" && (
+            <div className="client-row">
+              <div className="query-input input-small">
+                <input
+                  placeholder="Client Code"
+                  value={addClientCode}
+                  onChange={(e) =>
+                    setAddClientCode(e.target.value.toUpperCase())
+                  }
+                />
+              </div>
 
-      {/* MODIFY NEW FIELDS */}
-      {action === "modify" && (
-        <>
-          <input
-            placeholder="New Client Code (optional)"
-            value={newClientCode}
-            onChange={(e) => setNewClientCode(e.target.value.toUpperCase())}
-          />
-          <input
-            placeholder="New Client Name (optional)"
-            value={newClientName}
-            onChange={(e) => setNewClientName(e.target.value)}
-          />
-        </>
-      )}
+              <div className="query-input input-small">
+                <input
+                  placeholder="Client Name"
+                  value={addClientName}
+                  onChange={(e) => setAddClientName(e.target.value)}
+                />
+              </div>
 
-      <button className="btn primary-btn" onClick={handleSubmit}>
-        {action.toUpperCase()}
-      </button>
+              <button className="btn primary-btn" onClick={handleSubmit}>
+                ADD
+              </button>
+            </div>
+          )}
 
-      {error && <p className="error">{error}</p>}
-      {message && <p className="success">{message}</p>}
-    </div>
-  );
-};
+          {/* MODIFY */}
+          {action === "modify" && (
+            <div className="client-row">
+              <div className="query-input input-small">
+                <select
+                  value={oldClientCode}
+                  onChange={(e) => setOldClientCode(e.target.value)}
+                >
+                  <option value="">Select Client Code</option>
+                  {clientCodes.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
 
-export default AddClient;
+              <div className="query-input input-small">
+                <input
+                  placeholder="Client Name"
+                  value={oldClientName}
+                  disabled
+                />
+              </div>
+
+              <div className="query-input input-small">
+                <input
+                  placeholder="New Client Code (optional)"
+                  value={newClientCode}
+                  onChange={(e) =>
+                    setNewClientCode(e.target.value.toUpperCase())
+                  }
+                />
+              </div>
+
+              <div className="query-input input-small">
+                <input
+                  placeholder="New Client Name (optional)"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                />
+              </div>
+
+              <button className="btn primary-btn" onClick={handleSubmit}>
+                MODIFY
+              </button>
+            </div>
+          )}
+
+          {/* DELETE */}
+          {action === "delete" && (
+            <div className="client-row">
+              <div className="query-input input-small">
+                <select
+                  value={oldClientCode}
+                  onChange={(e) => setOldClientCode(e.target.value)}
+                >
+                  <option value="">Select Client Code</option>
+                  {clientCodes.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="query-input input-small">
+                <input
+                  placeholder="Client Name"
+                  value={oldClientName}
+                  disabled
+                />
+              </div>
+
+              <button className="btn primary-btn" onClick={handleSubmit}>
+                DELETE
+              </button>
+            </div>
+          )}
+
+          {error && <p className="error">{error}</p>}
+          {message && <p className="success">{message}</p>}
+
+        </div>
+      </div>
+    );
+  };
+
+  export default AddClient;
+
+
+

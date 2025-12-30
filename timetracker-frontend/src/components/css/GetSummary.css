@@ -1,0 +1,108 @@
+.section-label {
+  font-size: 20px;
+  font-weight: 600;
+  color: #004aad;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.get-summary-page {
+  padding: 24px;
+  background: #f4f6f9;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+.filter-card {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+.action-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 16px;
+    margin-left: 20px;
+}
+
+.btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.primary-btn {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* ===== DATE RANGE PICKERS ===== */
+.date-range-container {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.date-range-container label {
+  font-weight: 500;
+}
+
+.date-range-container input[type="date"] {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.date-range-container .btn {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  background-color: #004aad;
+}
+
+.date-range-container .btn:hover {
+  background-color: #0066ff;
+}
+
+.query-input label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.query-input input,
+.query-input textarea,
+ .query-input select{
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d0d5dd;
+  font-size: 14px;
+  display: flex;
+   flex-direction: column;
+}
+
+.query-input textarea {
+  resize: none;
+}
+
+/* WIDTH CONTROL */
+.input-small { width: 240px; }
+.input-large { width: 360px; }
+.input-date  { width: 160px; }
+
+
+

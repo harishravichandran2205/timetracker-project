@@ -2,8 +2,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
-import "../pages/css/AdminPage.css";
-import "../pages/css/SummaryPage.css";
+import "./css/GetSummary.css";
 import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
@@ -221,7 +220,7 @@ const GetSummary = () => {
   };
 
   return (
-    <div className="admin-page">
+     <div className = "get-summary-page">
 
       {/* FILTER CARD */}
       <div className="filter-card">

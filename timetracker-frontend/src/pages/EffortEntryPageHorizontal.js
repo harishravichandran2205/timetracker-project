@@ -477,9 +477,8 @@ const EffortEntryPageHorizontal = () => {
      for (const [key, val] of Object.entries(row.hoursByDate || {})) {
          const normalizedKey = toDMY(key);
         normalizedHoursByDate[normalizedKey] =
-        if (val == null || val.toString().trim() === "") {
-             continue; // 🔥 do not send empty hours
-           }
+         val == null || val.toString().trim() === "" ? 0 : val;
+                }
 
 
      return {

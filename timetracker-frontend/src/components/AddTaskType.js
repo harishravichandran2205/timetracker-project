@@ -129,80 +129,82 @@ const AddTaskType = () => {
   };
 
   return (
-    <div className="client-card">
-      <h3>Task Type Management</h3>
+    <div className = "add-client-page">
+        <div className="filter-card">
+          <label className="section-label">Task Type Management</label>
 
-      {/* ACTION */}
-      <div className="radio-group">
-        {["add", "modify", "delete"].map((a) => (
-          <label key={a}>
+          {/* ACTION */}
+          <div className="radio-group">
+            {["add", "modify", "delete"].map((a) => (
+              <label key={a}>
+                <input
+                  type="radio"
+                  checked={action === a}
+                  onChange={() => {
+                    setAction(a);
+                    setTaskType("");
+                    setNewTaskType("");
+                  }}
+                />
+                {a.toUpperCase()}
+              </label>
+            ))}
+          </div>
+
+          {/* CLIENT */}
+          <select value={clientCode} onChange={(e) => setClientCode(e.target.value)}>
+            <option value="">Select Client</option>
+            {clientCodes.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          {/* ADD */}
+          {action === "add" && (
             <input
-              type="radio"
-              checked={action === a}
-              onChange={() => {
-                setAction(a);
-                setTaskType("");
-                setNewTaskType("");
-              }}
+              placeholder="Task Type"
+              value={taskType}
+              onChange={(e) => setTaskType(e.target.value)}
             />
-            {a.toUpperCase()}
-          </label>
-        ))}
-      </div>
+          )}
 
-      {/* CLIENT */}
-      <select value={clientCode} onChange={(e) => setClientCode(e.target.value)}>
-        <option value="">Select Client</option>
-        {clientCodes.map((c) => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
+          {/* MODIFY / DELETE */}
+          {(action === "modify" || action === "delete") && (
+            <select
+              value={taskType}
+              onChange={(e) => setTaskType(e.target.value)}
+              disabled={!clientCode}
+            >
+              <option value="">
+                {!clientCode
+                  ? "Select Client First"
+                  : taskTypes.length === 0
+                  ? "No Task Types Found"
+                  : "Select Task Type"}
+              </option>
 
-      {/* ADD */}
-      {action === "add" && (
-        <input
-          placeholder="Task Type"
-          value={taskType}
-          onChange={(e) => setTaskType(e.target.value)}
-        />
-      )}
+              {taskTypes.map((t, i) => (
+                <option key={i} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
 
-      {/* MODIFY / DELETE */}
-      {(action === "modify" || action === "delete") && (
-        <select
-          value={taskType}
-          onChange={(e) => setTaskType(e.target.value)}
-          disabled={!clientCode}
-        >
-          <option value="">
-            {!clientCode
-              ? "Select Client First"
-              : taskTypes.length === 0
-              ? "No Task Types Found"
-              : "Select Task Type"}
-          </option>
+          {/* MODIFY NEW NAME */}
+          {action === "modify" && (
+            <input
+              placeholder="New Task Type"
+              value={newTaskType}
+              onChange={(e) => setNewTaskType(e.target.value)}
+            />
+          )}
 
-          {taskTypes.map((t, i) => (
-            <option key={i} value={t}>{t}</option>
-          ))}
-        </select>
-      )}
+          <button className="btn primary-btn" onClick={handleSubmit}>
+            {action.toUpperCase()}
+          </button>
 
-      {/* MODIFY NEW NAME */}
-      {action === "modify" && (
-        <input
-          placeholder="New Task Type"
-          value={newTaskType}
-          onChange={(e) => setNewTaskType(e.target.value)}
-        />
-      )}
-
-      <button className="btn primary-btn" onClick={handleSubmit}>
-        {action.toUpperCase()}
-      </button>
-
-      {error && <p className="error">{error}</p>}
-      {message && <p className="success">{message}</p>}
+          {error && <p className="error">{error}</p>}
+          {message && <p className="success">{message}</p>}
+        </div>
     </div>
   );
 };
