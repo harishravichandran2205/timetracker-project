@@ -35,27 +35,7 @@ const SummaryPage = () => {
   }, []);
 
   // ===== Fetch clients & categories =====
-  useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const [clientsRes, categoriesRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/options/clients`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          axios.get(`${API_BASE_URL}/api/options/categories`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-        setClientOptions(clientsRes.data.data || ["ENIA"]);
-        setCategoryOptions(categoriesRes.data.data || ["Test"]);
-      } catch (err) {
-        console.error(err);
-        showPopup("Failed to load options", "error");
-      }
-    };
-    fetchOptions();
-  }, []);
+
 
   // ===== Popup messages =====
 const showPopup = (msg, type = "success", persist = false) => {
