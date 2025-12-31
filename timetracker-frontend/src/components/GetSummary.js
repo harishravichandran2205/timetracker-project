@@ -28,44 +28,7 @@ const GetSummary = () => {
     return `${dd}-${mm}-${yyyy}`;
   };
 
-  const buildSummaryData = (rows = []) => {
-    const map = {};
 
-    rows.forEach((row) => {
-      if (!row || !row.ticket) return;
-
-      const ticket = row.ticket;
-
-      if (!map[ticket]) {
-        map[ticket] = {
-          client: row.client || "",
-          ticket: row.ticket,
-          ticketDescription: row.ticketDescription || "",
-          billableHours: 0,
-          nonBillableHours: 0,
-          descriptions: new Set() // ✅ Use Set for uniqueness
-        };
-      }
-
-      const hours = Number(row.hours || 0);
-
-      if (row.billable === "Yes") {
-        map[ticket].billableHours += hours;
-      } else {
-        map[ticket].nonBillableHours += hours;
-      }
-
-      if (row.description) {
-        map[ticket].descriptions.add(row.description.trim());
-      }
-    });
-
-    // Convert Set → Array for rendering
-    return Object.values(map).map(item => ({
-      ...item,
-      descriptions: Array.from(item.descriptions)
-    }));
-  };
 
   const downloadExcel = async () => {
     try {
@@ -77,7 +40,7 @@ const GetSummary = () => {
         emails: emails.split(",").map(e => e.trim()).filter(Boolean),
         startDate: formatForBackend(startDate),
         endDate: formatForBackend(endDate),
-        exportAll: true // ✅ KEY
+        exportAll: true
       };
 
       const res = await axios.post(
@@ -85,25 +48,24 @@ const GetSummary = () => {
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const data =Array.isArray(res.data?.data?.data)
+      const summaryData =Array.isArray(res.data?.data?.data)
                                 ? res.data.data.data
                                 : [];
-
-      const fullData = buildSummaryData(data);
-      generateExcel(fullData);
+      generateExcel(summaryData);
 
     } catch (err) {
       alert("Failed to download Excel");
     }
   };
 
+
   const generateExcel = (data) => {
     const excelData = data.map(row => ({
       "Client Name": row.client,
       "Ticket Number": row.ticket,
       "Ticket Description": row.ticketDescription,
-      "Billable Hours": row.billableHours,
-      "Non-Billable Hours": row.nonBillableHours,
+      "Billable Hours": row.billableHours ?? 0,
+      "Non-Billable Hours": row.nonBillableHours ?? 0,
       "Task Description": (row.descriptions || [])
         .map((d, i) => `${i + 1}. ${d}`)
         .join("\n")
@@ -111,7 +73,7 @@ const GetSummary = () => {
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
-    // ===== Header Style =====
+    // Header style
     const headerStyle = {
       font: { bold: true },
       alignment: { horizontal: "center", vertical: "center" }
@@ -121,7 +83,7 @@ const GetSummary = () => {
       if (worksheet[cell]) worksheet[cell].s = headerStyle;
     });
 
-    // ===== Wrap text for Task Description =====
+    // Wrap text for descriptions
     excelData.forEach((_, i) => {
       const cell = `F${i + 2}`;
       if (worksheet[cell]) {
@@ -131,7 +93,6 @@ const GetSummary = () => {
       }
     });
 
-    // ===== Column widths =====
     worksheet["!cols"] = [
       { wch: 18 },
       { wch: 18 },
@@ -149,12 +110,6 @@ const GetSummary = () => {
       `Effort_Summary_${new Date().toISOString().slice(0,10)}.xlsx`
     );
   };
-
-
-
-
-
-
   const handleSearch = async () => {
     setError("");
     setInfoMsg("");
@@ -264,7 +219,6 @@ const GetSummary = () => {
                 <input type="date" value={endDate} max={calendarMax} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
-
             <div className="action-row">
               <button className="btn primary-btn" onClick={handleSearch} disabled={loading}>
                 {loading ? "Searching..." : "Search"}
@@ -275,9 +229,6 @@ const GetSummary = () => {
             </div>
        </div>
       </div>
-
-
-
     </div>
   );
 };
