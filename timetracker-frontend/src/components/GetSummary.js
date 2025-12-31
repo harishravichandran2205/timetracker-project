@@ -165,7 +165,10 @@ const GetSummary = () => {
      }
 
      navigate("/admin/filtered-summary", {
-       state: { results: summaryData }
+       state: { results: summaryData,
+        startDate: formatForBackend(startDate),
+           endDate: formatForBackend(endDate)
+           }
      });
     } catch (err) {
       setError("Failed to fetch summary");

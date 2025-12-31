@@ -215,10 +215,10 @@ const AddTaskType = () => {
           <button className="btn primary-btn" onClick={handleSubmit}>
             {action.toUpperCase()}
           </button>
-
+           </div>
           {error && <p className="error">{error}</p>}
           {message && <p className="success">{message}</p>}
-        </div>
+
     </div>
     </div>
   );
