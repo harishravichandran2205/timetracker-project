@@ -8,13 +8,14 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const FilteredSummary = () => {
- const [searchBy, setSearchBy] = useState("client");
-  const [client, setClient] = useState("");
-  const [emails, setEmails] = useState("");
+
 
   const location = useLocation();
+  const searchBy = location.state?.searchBy || "";
    const startDate = location.state?.startDate || "";
-      const endDate = location.state?.endDate || "";
+   const endDate = location.state?.endDate || "";
+   const client = location.state?.client || "";
+   const emails = location.state?.emails || "";
   const rawResults = location.state?.results;
   console.log(rawResults);
   const results = Array.isArray(rawResults.data) ? rawResults.data : [];
@@ -37,9 +38,9 @@ const FilteredSummary = () => {
       const payload = {
         searchBy,
         client,
-        emails: emails.split(",").map(e => e.trim()).filter(Boolean),
-        startDate: formatForBackend(startDate),
-        endDate: formatForBackend(endDate),
+        emails,
+        startDate,
+        endDate,
         exportAll: true // ✅ KEY
       };
 
@@ -167,9 +168,9 @@ const FilteredSummary = () => {
         const payload = {
           searchBy,
           client,
-          emails: emails.split(",").map(e => e.trim()).filter(Boolean),
-          startDate: formatForBackend(startDate),
-          endDate: formatForBackend(endDate),
+          emails,
+          startDate,
+          endDate,
           exportAll: true
         };
 
@@ -201,7 +202,21 @@ const FilteredSummary = () => {
 
   return (
     <div className="admin-page">
-      <h2 className="page-title">Summary Result</h2>
+      <header className="summary-header">
+        <h2 className="page-title">Summary Result</h2>
+
+         <div className="summary-actions">
+        <button
+          className="btn secondary-btn"
+          onClick={downloadExcel}
+        >
+          Download Excel
+        </button>
+         <button className="btn secondary-btn" onClick={downloadPDF}>
+            Download PDF
+         </button>
+      </div>
+    </header>
 
       <table className="summary-table">
         <thead>
@@ -233,14 +248,7 @@ const FilteredSummary = () => {
           ))}
         </tbody>
       </table>
-      <div className="download-btn-container">
-       <button className="btn secondary-btn" onClick={downloadExcel}>
-         Download Excel
-       </button>
-       <button className="btn secondary-btn" onClick={downloadPDF}>
-         Download PDF
-       </button>
-       </div>
+
     </div>
 
   );

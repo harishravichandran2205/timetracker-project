@@ -21,6 +21,9 @@ const SummaryPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [role] = useState(localStorage.getItem("role") || "user");
+  const [searchBy, setSearchBy] = useState("email");
+  const [results, setResults] = useState([]);
+  const [activeView, setActiveView] = useState(null);
 
   // ===== Unsaved changes modal state =====
   const summaryTableRef = useRef();
@@ -72,6 +75,7 @@ const showPopup = (msg, type = "success", persist = false) => {
 
   // ===== Fetch summary data by date range =====
   const fetchSummaryByDate = async () => {
+    setActiveView("summary");
     if (!startDate || !endDate) {
       showPopup("Please select both start and end dates", "error");
       return;
@@ -94,12 +98,15 @@ const showPopup = (msg, type = "success", persist = false) => {
         : [];
 
        // if response is Empty
+      var backendMessage = "";
       if (fetchedTasks.length === 0) {
-      console.log("insideif-summarypage");
-          const backendMessage = response.data?.data?.message || "No records found for selected date range.";
+          backendMessage = response.data?.data?.message || "No records found for selected date range.";
           showPopup(backendMessage, "error", true); // <— true = make it persistent
           setSummaryData([]); // Clear table
           return;
+        }
+        else {
+          showPopup(backendMessage, "error", false);
         }
 
       // Add isEditing flag to each row
@@ -113,6 +120,51 @@ const showPopup = (msg, type = "success", persist = false) => {
     } catch (err) {
       console.error(err);
       showPopup("Failed to fetch summary", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchConsolidatedSummaryByDate = async () => {
+    setActiveView("consolidated");
+    setSummaryData([]);
+
+    if (!startDate || !endDate) {
+      showPopup("Please select both start and end dates", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const email = localStorage.getItem("email");
+
+      const payload = {
+        searchBy,
+        emails: [email],
+        startDate: formatForBackend(startDate),
+        endDate: formatForBackend(endDate)
+      };
+
+      const res = await axios.post(
+        `${API_BASE_URL}/api/admin-panel/search`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const data = Array.isArray(res?.data?.data?.data)
+        ? res.data.data.data
+        : [];
+
+      setResults(data);
+
+      if (data.length === 0) {
+        showPopup("No effort records found for entered criteria", "error", true);
+      }
+
+    } catch (err) {
+      console.error(err);
+      showPopup("Failed to fetch consolidated summary", "error");
     } finally {
       setLoading(false);
     }
@@ -206,13 +258,16 @@ const handleUnSave = () => {
             <button className="btn" onClick={fetchSummaryByDate}>
               Show Summary
             </button>
+            <button className="btn" onClick={fetchConsolidatedSummaryByDate}>
+              Show Consolidated Summary
+            </button>
           </div>
 
           {loading && <p>Loading summary...</p>}
           {error && <div className="popup error">{error}</div>}
           {success && <div className="popup success">{success}</div>}
 
-          {!loading && summaryData.length > 0 && (
+          {!loading && activeView === "summary" &&  summaryData.length > 0 && (
             <SummaryTable  ref={summaryTableRef}
               summaryData={summaryData}
               setSummaryData={handleDataChange}
@@ -222,6 +277,41 @@ const handleUnSave = () => {
               clientOptions={clientOptions}
               categoryOptions={categoryOptions}
             />
+          )}
+
+          {!loading && activeView === "consolidated" && results.length > 0 && (
+            <div className="summary-table-wrapper">
+              <table className="summary-table">
+                <thead>
+                  <tr>
+                    <th>Client Name</th>
+                    <th>Ticket Number</th>
+                    <th>Ticket Description</th>
+                    <th>Billable Hours</th>
+                    <th>Non-Billable Hours</th>
+                    <th>Task Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((row, idx) => (
+                    <tr key={idx}>
+                      <td>{row.client}</td>
+                      <td>{row.ticket}</td>
+                      <td>{row.ticketDescription}</td>
+                      <td>{row.billableHours}</td>
+                      <td>{row.nonBillableHours}</td>
+                      <td>
+                        <ol className="task-list">
+                          {(row.descriptions || []).map((desc, i) => (
+                            <li key={i}>{desc}</li>
+                          ))}
+                        </ol>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

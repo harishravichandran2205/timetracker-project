@@ -258,9 +258,12 @@ const GetSummary = () => {
 
      navigate("/admin/filtered-summary", {
        state: { results: summaryData,
+       emails: emails.split(",").map(e => e.trim()).filter(Boolean),
         startDate: formatForBackend(startDate),
-           endDate: formatForBackend(endDate)
-           }
+         endDate: formatForBackend(endDate),
+         searchBy : searchBy,
+         client: client
+         }
      });
     } catch (err) {
       setError("Failed to fetch summary");

@@ -108,11 +108,19 @@
   line-height: 1.4;
 }
 
-.download-btn-container {
+.summary-header {
   display: flex;
-  justify-content: flex-end;   /* move to right */
-  margin-top: 20px;
+  align-items: center;              /* vertical alignment */
+  justify-content: space-between;   /* title left, buttons right */
+  margin-bottom: 20px;
 }
+
+.summary-actions {
+  display: flex;
+  gap: 15px;                        /* 👈 space between buttons */
+}
+
+
 
 .download-btn {
   margin-right: 20px;
