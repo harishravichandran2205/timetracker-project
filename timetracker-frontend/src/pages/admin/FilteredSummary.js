@@ -27,44 +27,6 @@ const FilteredSummary = () => {
       return `${dd}-${mm}-${yyyy}`;
     };
 
-    const buildSummaryData = (rows = []) => {
-      const map = {};
-
-      rows.forEach((row) => {
-        if (!row || !row.ticket) return;
-
-        const ticket = row.ticket;
-
-        if (!map[ticket]) {
-          map[ticket] = {
-            client: row.client || "",
-            ticket: row.ticket,
-            ticketDescription: row.ticketDescription || "",
-            billableHours: 0,
-            nonBillableHours: 0,
-            descriptions: new Set() // ✅ Use Set for uniqueness
-          };
-        }
-
-        const hours = Number(row.hours || 0);
-
-        if (row.billable === "Yes") {
-          map[ticket].billableHours += hours;
-        } else {
-          map[ticket].nonBillableHours += hours;
-        }
-
-        if (row.description) {
-          map[ticket].descriptions.add(row.description.trim());
-        }
-      });
-
-      // Convert Set → Array for rendering
-      return Object.values(map).map(item => ({
-        ...item,
-        descriptions: Array.from(item.descriptions)
-      }));
-    };
 
   const downloadExcel = async () => {
     try {
@@ -84,12 +46,11 @@ const FilteredSummary = () => {
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const data =Array.isArray(res.data?.data?.data)
-                                ? res.data.data.data
-                                : [];
-
-      const fullData = buildSummaryData(data);
-      generateExcel(fullData);
+      const summaryData =Array.isArray(res.data?.data?.data)
+                                      ? res.data.data.data
+                                      : [];
+      console.log(summaryData);
+      generateExcel(summaryData);
 
     } catch (err) {
       alert("Failed to download Excel");
@@ -97,16 +58,16 @@ const FilteredSummary = () => {
   };
 
   const generateExcel = (data) => {
-    const excelData = data.map(row => ({
-      "Client Name": row.client,
-      "Ticket Number": row.ticket,
-      "Ticket Description": row.ticketDescription,
-      "Billable Hours": row.billableHours,
-      "Non-Billable Hours": row.nonBillableHours,
-      "Task Description": (row.descriptions || [])
-        .map((d, i) => `${i + 1}. ${d}`)
-        .join("\n")
-    }));
+      const excelData = data.map(row => ({
+        "Client Name": row.client,
+        "Ticket Number": row.ticket,
+        "Ticket Description": row.ticketDescription,
+        "Billable Hours": row.billableHours ?? 0,
+        "Non-Billable Hours": row.nonBillableHours ?? 0,
+        "Task Description": (row.descriptions || [])
+          .map((d, i) => `${i + 1}. ${d}`)
+          .join("\n")
+      }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
 
