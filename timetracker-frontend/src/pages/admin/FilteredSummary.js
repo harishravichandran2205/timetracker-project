@@ -4,6 +4,8 @@ import "../css/AdminPage.css";
 import axios from "axios";
 import API_BASE_URL from "../../config/BackendApiConfig";
 import * as XLSX from "xlsx-js-style";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const FilteredSummary = () => {
  const [searchBy, setSearchBy] = useState("client");
@@ -110,6 +112,93 @@ const FilteredSummary = () => {
     );
   };
 
+  const generatePDF = (data) => {
+      const doc = new jsPDF("landscape");
+
+      doc.setFontSize(14);
+      doc.text("Effort Summary Report", 14, 15);
+
+      const tableColumn = [
+        "Client Name",
+        "Ticket Number",
+        "Ticket Description",
+        "Billable Hours",
+        "Non-Billable Hours",
+        "Task Description"
+      ];
+
+      const tableRows = data.map(row => [
+        row.client,
+        row.ticket,
+        row.ticketDescription,
+        row.billableHours ?? 0,
+        row.nonBillableHours ?? 0,
+        (row.descriptions || [])
+          .map((d, i) => `${i + 1}. ${d}`)
+          .join("\n")
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          valign: "top"
+        },
+        headStyles: {
+          fillColor: [41, 128, 185]
+        },
+        columnStyles: {
+          5: { cellWidth: 80 }
+        },
+        pageBreak: "auto"
+      });
+
+      doc.save(`Effort_Summary_${new Date().toISOString().slice(0, 10)}.pdf`);
+    };
+
+    const downloadPDF = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        console.log("Token:", token);
+
+        const payload = {
+          searchBy,
+          client,
+          emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+          startDate: formatForBackend(startDate),
+          endDate: formatForBackend(endDate),
+          exportAll: true
+        };
+
+        console.log("PDF Payload:", payload);
+
+        const res = await axios.post(
+          `${API_BASE_URL}/api/admin-panel/search`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        console.log("PDF API Response:", res);
+
+        const summaryData = Array.isArray(res.data?.data?.data)
+          ? res.data.data.data
+          : [];
+
+        console.log("PDF Data Length:", summaryData.length);
+
+        generatePDF(summaryData);
+
+      } catch (err) {
+        console.error("PDF Download Error:", err);
+        console.error("Response:", err?.response);
+        console.error("Message:", err?.message);
+        alert("Failed to download PDF");
+      }
+    };
+
   return (
     <div className="admin-page">
       <h2 className="page-title">Summary Result</h2>
@@ -146,7 +235,10 @@ const FilteredSummary = () => {
       </table>
       <div className="download-btn-container">
        <button className="btn secondary-btn" onClick={downloadExcel}>
-                                Download Full Report
+         Download Excel
+       </button>
+       <button className="btn secondary-btn" onClick={downloadPDF}>
+         Download PDF
        </button>
        </div>
     </div>
