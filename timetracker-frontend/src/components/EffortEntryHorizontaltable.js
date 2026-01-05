@@ -100,7 +100,6 @@ const HorizontalEffortTable = ({
                 {/* CATEGORY */}
                 <td>
                   <select
-                    key={`category-${rowIndex}-${taskTypeOptions[rowIndex]?.length || 0}`}
                     value={row.category ?? ""}
                     onChange={(e) =>
                       handleChange(rowIndex, "category", e.target.value)
@@ -121,7 +120,12 @@ const HorizontalEffortTable = ({
                       </option>
                     ))}
                   </select>
+
+                  {showValidation && isRowUsed(row) && !row.category && (
+                    <div className="field-error">Category required</div>
+                  )}
                 </td>
+
 
                 {/* BILLABLE */}
                 <td>

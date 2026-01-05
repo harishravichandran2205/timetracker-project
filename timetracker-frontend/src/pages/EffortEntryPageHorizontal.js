@@ -601,6 +601,12 @@ const EffortEntryPageHorizontal = () => {
 
      setRows(finalRows);
 
+     finalRows.forEach((r, index) => {
+       if (r.client) {
+         fetchTaskTypesForRow(index, r.client);
+       }
+     });
+
      // ✅ SNAPSHOT MUST MATCH ROWS
      setSavedRowsSnapshot(JSON.parse(JSON.stringify(finalRows)));
      if(showMessage){
