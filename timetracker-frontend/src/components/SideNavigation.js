@@ -7,9 +7,8 @@ import "./css/SideNavigation.css";
 
 const navItems = [
   { path: "/dashboard", icon: <BiSolidHome />, label: "Dashboard" },
-  { path: "/effort-entry", icon: <MdAccessTimeFilled />, label: "Effort Entry-row" },
+  { path: "/effort-entry-horizon", icon: <GrDocumentTime />, label: "Effort Entry" },
   { path: "/summary", icon: <BiSolidBarChartSquare />, label: "Summary" },
-  { path: "/effort-entry-horizon", icon: <GrDocumentTime />, label: "Effort Entry-horizon" },
 ];
 
 const SideNav = ({ onNavClick }) => {
