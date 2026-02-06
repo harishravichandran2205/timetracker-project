@@ -387,6 +387,11 @@ const EffortEntryPageHorizontal = () => {
 
   // ✅ SAVE
  const handleSave = async () => {
+   if (!hasUnsavedChanges()) {
+     showPopup("Task(s) already saved", "error");
+     return;
+   }
+
    const token = localStorage.getItem("token");
    const email = localStorage.getItem("email");
    const firstName = localStorage.getItem("firstName");
@@ -451,7 +456,18 @@ const EffortEntryPageHorizontal = () => {
            Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
          };
          const month = monthMap[monthShort] || "01";
-         const year = new Date().getFullYear(); // ✅ always current year
+         const start = dateRange?.start ? parseDMY(dateRange.start) : null;
+         const end = dateRange?.end ? parseDMY(dateRange.end) : null;
+         let year = new Date().getFullYear();
+         if (start && end) {
+           // Use the visible range's year, handling year-boundary weeks
+           const monthIndex = Number(month) - 1;
+           const candidate = new Date(start.getFullYear(), monthIndex, Number(day));
+           year =
+             candidate < start && end.getFullYear() > start.getFullYear()
+               ? end.getFullYear()
+               : start.getFullYear();
+         }
          return `${day}-${month}-${year}`;
        } catch {
          return raw;
