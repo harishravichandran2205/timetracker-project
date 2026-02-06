@@ -13,23 +13,21 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [currentRows, setCurrentRows] = useState([]);
-  const [previousMonthRows, setPreviousMonthRows] = useState([]);
+  const [monthOffset, setMonthOffset] = useState(0);
 
   const pad2 = (n) => String(n).padStart(2, "0");
   const formatForBackend = (d) =>
     `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
   const today = new Date();
-  const startDate = formatForBackend(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  );
-  const endDate = formatForBackend(today);
-  const prevStartDate = formatForBackend(
-    new Date(today.getFullYear(), today.getMonth() - 1, 1)
-  );
-  const prevEndDate = formatForBackend(
-    new Date(today.getFullYear(), today.getMonth(), 0)
-  );
+  const monthStart = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + monthOffset + 1, 0);
+  const startDate = formatForBackend(monthStart);
+  const endDate = formatForBackend(monthEnd);
+  const monthLabel = monthStart.toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -48,25 +46,17 @@ const DashboardPage = () => {
         const token = localStorage.getItem("token");
         const email = localStorage.getItem("email");
 
-        const [currentRes, prevRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/effort-entry-horizon`, {
+        const currentRes = await axios.get(
+          `${API_BASE_URL}/api/effort-entry-horizon`,
+          {
             headers: { Authorization: `Bearer ${token}` },
             params: { email, startDate, endDate },
-          }),
-          axios.get(`${API_BASE_URL}/api/effort-entry-horizon`, {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { email, startDate: prevStartDate, endDate: prevEndDate },
-          }),
-        ]);
+          }
+        );
 
         setCurrentRows(
           Array.isArray(currentRes.data?.data?.data)
             ? currentRes.data.data.data
-            : []
-        );
-        setPreviousMonthRows(
-          Array.isArray(prevRes.data?.data?.data)
-            ? prevRes.data.data.data
             : []
         );
       } catch (err) {
@@ -75,7 +65,7 @@ const DashboardPage = () => {
     };
 
     fetchDashboardData();
-  }, [startDate, endDate, prevStartDate, prevEndDate]);
+  }, [startDate, endDate]);
 
   return (
     <div className="layout-container">
@@ -86,10 +76,43 @@ const DashboardPage = () => {
 
         <main className="page-content">
           <h2 className="page-title">Dashboard</h2>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: 12,
+            }}
+          >
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setMonthOffset((v) => v - 1)}
+            >
+              &lt;
+            </button>
+            <h4 style={{ margin: 0, textAlign: "center" }}>
+              {monthLabel} – Effort Summary
+            </h4>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setMonthOffset((v) => v + 1)}
+              disabled={monthOffset >= 0}
+              title={monthOffset >= 0 ? "Cannot view future months" : ""}
+            >
+              &gt;
+            </button>
+          </div>
 
           <div className="dashboard-charts">
             <BillableNonBillablePie rows={currentRows} />
-            <PreviousMonthWeeklyBar rows={previousMonthRows} />
+            <PreviousMonthWeeklyBar
+              rows={currentRows}
+              rangeStart={monthStart}
+              rangeEnd={monthEnd}
+              monthLabelOverride={monthLabel}
+            />
           </div>
         </main>
       </div>
@@ -98,3 +121,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+

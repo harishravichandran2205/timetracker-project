@@ -387,43 +387,69 @@ const EffortEntryPageHorizontal = () => {
 
   // ✅ SAVE
  const handleSave = async () => {
-   if (!hasUnsavedChanges()) {
-     showPopup("Task(s) already saved", "error");
-     return;
-   }
-
    const token = localStorage.getItem("token");
    const email = localStorage.getItem("email");
    const firstName = localStorage.getItem("firstName");
    const lastName = localStorage.getItem("lastName");
 
-
-   // ❗ Require task description for all "used" rows
-     const rowsMissingDesc = rows.filter((r) => {
+   const isRowUsed = (r) => {
      const hasHours = Object.values(r.hoursByDate || {}).some(
        (v) => v && v.toString().trim() !== ""
      );
-     const hasMainFields = [r.client, r.ticket, r.ticketDescription, r.category, r.billable]
-       .some((v) => v && v.toString().trim() !== "");
+     const hasMainFields = [
+       r.client,
+       r.ticket,
+       r.ticketDescription,
+       r.category,
+       r.billable,
+       r.description,
+     ].some((v) => v && v.toString().trim() !== "");
+     return hasHours || hasMainFields;
+   };
 
-     // row is considered "used" if it has hours OR some core fields filled
-     const isUsed = hasHours || hasMainFields;
+   const rowsToSave = rows.filter(isRowUsed);
 
-     return isUsed && (!r.description || !r.description.trim());
+   if (rowsToSave.length !== rows.length) {
+     setRows(rowsToSave.length > 0 ? rowsToSave : [createNewRow()]);
+   }
+
+   if (rowsToSave.length === 0) {
+     showPopup("No tasks to save", "error");
+     return;
+   }
+
+   // ❗ Require all core fields for "used" rows
+   const rowsMissingRequired = rowsToSave.filter((r) => {
+     const hasHours = Object.values(r.hoursByDate || {}).some(
+       (v) => v && v.toString().trim() !== ""
+     );
+     const hasMainFields = [
+       r.client,
+       r.ticket,
+       r.ticketDescription,
+       r.category,
+       r.billable,
+       r.description,
+     ].some((v) => v && v.toString().trim() !== "");
+
+     return !r.client ||
+       !r.ticket ||
+       !r.ticketDescription ||
+       !r.category ||
+       !r.billable ||
+       !r.description ||
+       !hasHours;
    });
 
-   const invalidRows = rows.filter(r => !r.description || r.description.trim() === "");
+   if (rowsMissingRequired.length > 0) {
+     setShowValidation(true);
+     showPopup("Please fill all required fields", "error");
+     return;
+   }
+   setShowValidation(false);
 
-        if (invalidRows.length > 0) {
-          setShowValidation(true);
-          showPopup("Please fill the task description", "error");
-          return;
-        }
-        setShowValidation(false);
-
-
-   if (!rows || rows.length === 0) {
-     showPopup("No tasks to save", "error");
+   if (!hasUnsavedChanges()) {
+     showPopup("Task(s) already saved", "error");
      return;
    }
 
@@ -488,7 +514,7 @@ const EffortEntryPageHorizontal = () => {
 
 
    // ✅ Normalize payload
-   const payload = rows.map((row) => {
+   const payload = rowsToSave.map((row) => {
      const normalizedHoursByDate = {};
      for (const [key, val] of Object.entries(row.hoursByDate || {})) {
          const normalizedKey = toDMY(key);
@@ -524,7 +550,7 @@ const EffortEntryPageHorizontal = () => {
    };
 
    const futureDates = [];
-   for (const r of rows) {
+   for (const r of rowsToSave) {
      for (const [dt, val] of Object.entries(r.hoursByDate || {})) {
        if (!val) continue;
        const dmy = toDMY(dt);

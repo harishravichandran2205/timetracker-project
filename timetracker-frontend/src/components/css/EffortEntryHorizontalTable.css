@@ -72,6 +72,15 @@
   background-color: #e8f0ff;
 }
 
+.horizontal-effort-table .field-invalid {
+  background-color: #fff1f1;
+  border: 2px solid #ff4d4f;
+}
+
+.horizontal-effort-table td.field-invalid {
+  background-color: #fff1f1;
+}
+
 /* ===== INPUTS & SELECTS ===== */
 .horizontal-effort-table input,
 .horizontal-effort-table select {

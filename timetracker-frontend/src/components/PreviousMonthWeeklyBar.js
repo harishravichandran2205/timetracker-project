@@ -54,25 +54,8 @@ const parseDateSafe = (raw) => {
   return isNaN(parsed) ? null : parsed;
 };
 
-// Find the month range based on latest DB data
-const getMonthRangeFromData = (rows) => {
-  const allDates = [];
-
-  rows.forEach((row) => {
-    Object.keys(row.hoursByDate || {}).forEach((d) => {
-      const parsed = parseDateSafe(d);
-      if (parsed) allDates.push(parsed);
-    });
-  });
-
-  if (allDates.length === 0) return null;
-
-  // Latest date present in DB
-  const latest = new Date(Math.max(...allDates.map(d => d.getTime())));
-
-  const start = new Date(latest.getFullYear(), latest.getMonth(), 1);
-  const end   = new Date(latest.getFullYear(), latest.getMonth() + 1, 0);
-
+const normalizeMonthRange = (start, end) => {
+  if (!(start instanceof Date) || !(end instanceof Date)) return null;
   return { start, end };
 };
 
@@ -135,7 +118,7 @@ const buildWeekLabelMap = (rangeStart, rangeEnd) => {
 
 /* =========================================== */
 
-const PreviousMonthWeeklyBar = ({ rows }) => {
+const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride }) => {
   const getThemeColors = () => {
     if (typeof window === "undefined") {
       return { primary: "#004aad", accent: "#0066ff" };
@@ -158,10 +141,10 @@ const PreviousMonthWeeklyBar = ({ rows }) => {
 
   const { primary, accent } = getThemeColors();
   const { tagBg, tagText } = getTagColors();
-  const { labels, billable, nonBillable, monthLabel, noDataWeeks } = useMemo(() => {
-    const range = getMonthRangeFromData(rows);
+  const { labels, billable, nonBillable, monthLabel, noDataWeeks, totalHours } = useMemo(() => {
+    const range = normalizeMonthRange(rangeStart, rangeEnd);
     if (!range) {
-      return { labels: [], billable: [], nonBillable: [], monthLabel: "", noDataWeeks: [] };
+      return { labels: [], billable: [], nonBillable: [], monthLabel: "", noDataWeeks: [], totalHours: 0 };
     }
 
     const { start, end } = range;
@@ -194,10 +177,14 @@ const PreviousMonthWeeklyBar = ({ rows }) => {
       .map(Number)
       .sort((a, b) => a - b);
 
-    const monthLabel = start.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
+    const monthLabel =
+      monthLabelOverride ||
+      start.toLocaleString("default", { month: "long", year: "numeric" });
+
+    const totalHours = weeks.reduce(
+      (sum, w) => sum + (weekly[w]?.billable || 0) + (weekly[w]?.nonBillable || 0),
+      0
+    );
 
     return {
       labels: weeks.map((w) => weekLabels[w] || `Week ${w}`),
@@ -207,17 +194,18 @@ const PreviousMonthWeeklyBar = ({ rows }) => {
         (w) => !(weekly[w] && (weekly[w].billable || weekly[w].nonBillable))
       ),
       monthLabel,
+      totalHours,
     };
-  }, [rows]);
+  }, [rows, rangeStart, rangeEnd, monthLabelOverride]);
 
-  if (labels.length === 0) {
+  if (labels.length === 0 || totalHours === 0) {
     return (
       <div className="dashboard-card dashboard-card--bar">
         <h4 style={{ textAlign: "center" }}>
-          Previous Month – Weekly Effort
+          {monthLabel || "This Month"} – Weekly Effort
         </h4>
         <p style={{ textAlign: "center", color: "#888" }}>
-          No data available for previous month
+          No data available for this month
         </p>
       </div>
     );

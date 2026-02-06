@@ -159,6 +159,8 @@ public class TaskController {
                             existing.setUserId(user_Id);
                             existing.setFirstName(firstName);
                             existing.setLastName(lastName);
+                            rowChanged = true;
+                            updateLogs.add("Updated fields | rowId=" + rowId + " date=" + date);
                         }
 
                         if (rowChanged) {

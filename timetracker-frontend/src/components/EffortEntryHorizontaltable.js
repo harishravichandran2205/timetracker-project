@@ -31,6 +31,7 @@ const HorizontalEffortTable = ({
 
     return hasHours || hasMainFields;
   };
+
   return (
     <div className="horizontal-effort-table-wrapper">
       <table className="horizontal-effort-table">
@@ -50,10 +51,20 @@ const HorizontalEffortTable = ({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, rowIndex) => (
+          {rows.map((row, rowIndex) => {
+            const rowUsed = isRowUsed(row);
+            const hasHours = Object.values(row.hoursByDate || {}).some(
+              (v) => v && v.toString().trim() !== ""
+            );
+            const needs = (cond) => (showValidation && rowUsed && cond ? "field-invalid" : "");
+            return (
             <tr key={rowIndex}>
               <td>
-                <select value={row.client} onChange={(e) => handleChange(rowIndex, "client", e.target.value)}>
+                <select
+                  value={row.client}
+                  className={needs(!row.client)}
+                  onChange={(e) => handleChange(rowIndex, "client", e.target.value)}
+                >
                   <option value="">Select</option>
 
                   {clients.length === 0 && (
@@ -69,6 +80,7 @@ const HorizontalEffortTable = ({
                 <input
                   type="text"
                   value={row.ticket}
+                  className={needs(!row.ticket)}
                   onChange={(e) => handleChange(rowIndex, "ticket", e.target.value)}
                 />
               </td>
@@ -77,6 +89,7 @@ const HorizontalEffortTable = ({
                   <input
                     type="text"
                     value={row.ticketDescription}
+                    className={needs(!row.ticketDescription || !row.ticketDescription.trim())}
                     onChange={(e) => handleChange(rowIndex, "ticketDescription", e.target.value)}
                   />
 
@@ -101,6 +114,7 @@ const HorizontalEffortTable = ({
                 <td>
                   <select
                     value={row.category ?? ""}
+                    className={needs(!row.category)}
                     onChange={(e) =>
                       handleChange(rowIndex, "category", e.target.value)
                     }
@@ -121,9 +135,6 @@ const HorizontalEffortTable = ({
                     ))}
                   </select>
 
-                  {showValidation && isRowUsed(row) && !row.category && (
-                    <div className="field-error">Category required</div>
-                  )}
                 </td>
 
 
@@ -131,6 +142,7 @@ const HorizontalEffortTable = ({
                 <td>
                   <select
                     value={row.billable ?? ""}
+                    className={needs(!row.billable)}
                     onChange={(e) =>
                       handleChange(rowIndex, "billable", e.target.value)
                     }
@@ -143,7 +155,10 @@ const HorizontalEffortTable = ({
 
                 {/* HOURS */}
                 {dateColumns.map((date) => (
-                  <td key={date} className="date-col">
+                  <td
+                    key={date}
+                    className={`date-col ${needs(!hasHours)}`}
+                  >
                     <input
                       type="number"
                       min="0"
@@ -184,7 +199,7 @@ const HorizontalEffortTable = ({
               </td>
 
             </tr>
-          ))}
+          )})}
         </tbody>
       </table>
     </div>
