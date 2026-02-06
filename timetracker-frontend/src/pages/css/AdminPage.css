@@ -1,0 +1,127 @@
+.admin-page {
+  padding: 24px;
+  background: #f4f6f9;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+
+
+.filter-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+
+
+.search-by {
+  margin-bottom: 14px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 18px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.filter-grid {
+   display: flex;
+    gap: 24px;           /* increase spacing */
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+
+
+
+.admin-error {
+  background: #fee4e2;
+  color: #b42318;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.admin-success {
+  background: #ecfdf3;
+  color: #027a48;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.result-count {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+.summary-table th {
+  background: #f9fafb;
+  padding: 10px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.summary-table td {
+  padding: 10px;
+  font-size: 13px;
+  border-top: 1px solid #eaecf0;
+}
+
+.summary-table tr:hover {
+  background: #f1f5f9;
+}
+
+.summary-table th {
+  background-color: #e5e7eb;   /* darker header */
+  color: #111827;              /* dark text */
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 2px solid #d1d5db;
+}
+
+.task-list {
+  padding-left: 18px;
+  margin: 0;
+}
+
+.task-list li {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;              /* vertical alignment */
+  justify-content: space-between;   /* title left, buttons right */
+  margin-bottom: 20px;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 15px;                        /* 👈 space between buttons */
+}
+
+
+
+.download-btn {
+  margin-right: 20px;
+}

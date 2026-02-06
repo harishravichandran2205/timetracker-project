@@ -1,109 +1,96 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import SummaryTable from "../components/SummaryTable";
-import API_BASE_URL from "../config/BackendApiConfig";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
+import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/DashBoardPage.css";
+
+import BillableNonBillablePie from "../components/BillableNonBillablePie";
+import PreviousMonthWeeklyBar from "../components/PreviousMonthWeeklyBar";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
-  const [summaryData, setSummaryData] = useState([]);
+  const [currentRows, setCurrentRows] = useState([]);
+  const [previousMonthRows, setPreviousMonthRows] = useState([]);
 
-  const clientOptions = ["Client A", "Client B", "ENIA"];
-  const categoryOptions = ["Development", "Testing", "Design", "Analysis"];
-
-  const formatDateForInput = (date) =>
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-      date.getDate()
-    ).padStart(2, "0")}`;
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const formatForBackend = (d) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
   const today = new Date();
-  const startDate = formatDateForInput(today);
-  const endDate = formatDateForInput(today);
-
-  // Check if there are unsaved changes (dummy example, update if you have editable rows)
-  const hasUnsavedChanges = () =>
-    summaryData.some((row) =>
-      Object.values(row).some((val) => val && val.toString().trim() !== "")
-    );
-
-  // Handle navigation from SideNav
-  const handleNavClick = (path) => {
-    if (hasUnsavedChanges()) {
-      const leave = window.confirm(
-        "You have unsaved changes! Are you sure you want to leave without saving?"
-      );
-      if (!leave) return;
-    }
-    navigate(path);
-  };
-
-  // Warn on browser refresh/close
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges()) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () =>
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [summaryData]);
+  const startDate = formatForBackend(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  );
+  const endDate = formatForBackend(today);
+  const prevStartDate = formatForBackend(
+    new Date(today.getFullYear(), today.getMonth() - 1, 1)
+  );
+  const prevEndDate = formatForBackend(
+    new Date(today.getFullYear(), today.getMonth(), 0)
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUsername = localStorage.getItem("username");
-    const email = localStorage.getItem("email");
 
     if (!token) {
       navigate("/login");
       return;
     }
+    setUsername(storedUsername || "User");
+  }, [navigate]);
 
-    setUsername(
-      storedUsername
-        ? storedUsername.charAt(0).toUpperCase() + storedUsername.slice(1)
-        : "User"
-    );
-
-    const fetchSummary = async () => {
+  useEffect(() => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/tasks/summary-by-range?email=${email}&startDate=${startDate}&endDate=${endDate}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const token = localStorage.getItem("token");
+        const email = localStorage.getItem("email");
+
+        const [currentRes, prevRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/effort-entry-horizon`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { email, startDate, endDate },
+          }),
+          axios.get(`${API_BASE_URL}/api/effort-entry-horizon`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { email, startDate: prevStartDate, endDate: prevEndDate },
+          }),
+        ]);
+
+        setCurrentRows(
+          Array.isArray(currentRes.data?.data?.data)
+            ? currentRes.data.data.data
+            : []
         );
-        setSummaryData(response.data?.data?.data || []);
+        setPreviousMonthRows(
+          Array.isArray(prevRes.data?.data?.data)
+            ? prevRes.data.data.data
+            : []
+        );
       } catch (err) {
-        console.error("Error fetching summary:", err);
+        console.error("Dashboard fetch failed", err);
       }
     };
 
-    fetchSummary();
-  }, [navigate, startDate, endDate]);
+    fetchDashboardData();
+  }, [startDate, endDate, prevStartDate, prevEndDate]);
 
   return (
     <div className="layout-container">
-      {/* Header */}
       <TopHeader username={username} />
 
       <div className="main-section">
-
-        <SideNav onNavClick={handleNavClick} activePage="dashboard" />
+        <SideNav activePage="dashboard" />
 
         <main className="page-content">
           <h2 className="page-title">Dashboard</h2>
-          <SummaryTable
-            summaryData={summaryData}
-            clientOptions={clientOptions}
-            categoryOptions={categoryOptions}
-            startDate={startDate}
-            endDate={endDate}
-            editable={false}
-          />
+
+          <div className="dashboard-charts">
+            <BillableNonBillablePie rows={currentRows} />
+            <PreviousMonthWeeklyBar rows={previousMonthRows} />
+          </div>
         </main>
       </div>
     </div>

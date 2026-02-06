@@ -1,0 +1,33 @@
+.filter-card {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+
+
+.add-client-page {
+  padding: 24px;
+  background: #f4f6f9;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+.section-label {
+  font-size: 20px;
+  font-weight: 600;
+  color: #004aad;
+  margin-bottom: 6px;
+  display: block;
+}
+.user-role-row {
+  display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+}
+
+.input-small { width: 220px; }
+.input-large { width: 360px; }
+.input-date  { width: 160px; }

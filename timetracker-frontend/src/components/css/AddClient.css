@@ -1,0 +1,90 @@
+
+
+.filter-card {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+.section-label {
+  font-size: 20px;
+  font-weight: 600;
+  color: #004aad;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.action-row {
+
+    gap: 12px;
+    align-items: center;
+    margin-top: 16px;
+    margin-left: 20px;
+}
+
+.btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.primary-btn {
+  padding: 8px 16px;
+    border-radius: 5px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    background-color: #004aad;
+}
+.primary-btn:hover {
+  background-color: #0066ff;
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-client-page {
+  padding: 24px;
+  background: #f4f6f9;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+.query-input label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.query-input input,
+.query-input textarea,
+.query-input select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d0d5dd;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.query-input textarea {
+  resize: none;
+}
+
+/* WIDTH CONTROL */
+.input-small { width: 220px; }
+.input-large { width: 360px; }
+.input-date  { width: 160px; }
+
+.client-row {
+  display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+}

@@ -32,17 +32,23 @@
   margin-bottom: 20px;
 }
 
-.effort-options label {
-  font-weight: 600;
-  color: #333;
+/* push the save button container to the right */
+.save-btn-div {
+  margin-left: auto;
 }
 
-.effort-options select {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
+.save-btn {
+  background-color: #28a745;
+  color: white;
+  padding: 7px 14px;
   border-radius: 4px;
-  background: #fff;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.save-btn:hover {
+  background-color: #218838;
 }
 
 /* ===== DATE RANGE ===== */
@@ -83,14 +89,6 @@
   background-color: #003a88;
 }
 
-.save-btn {
-  background-color: #28a745;
-  color: white;
-}
-
-.save-btn:hover {
-  background-color: #218838;
-}
 
 /* ===== POPUP NOTIFICATIONS ===== */
 .centered-popup {
@@ -118,5 +116,7 @@
     display: flex;
     justify-content :flex-start;
  }
-
+.save-btn-div{
+    align-items: right;
+}
 

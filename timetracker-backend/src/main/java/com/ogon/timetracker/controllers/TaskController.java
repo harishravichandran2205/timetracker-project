@@ -1,9 +1,14 @@
 package com.ogon.timetracker.controllers;
 
+import com.ogon.timetracker.dto.AdminSummaryDTO;
 import com.ogon.timetracker.dto.TaskDTO;
 import com.ogon.timetracker.entities.TaskEntity;
+import com.ogon.timetracker.rendererer.TimeTrackerRenderer;
 import com.ogon.timetracker.repositories.TaskRepository;
+import com.ogon.timetracker.repositories.UserRepository;
+import com.ogon.timetracker.services.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.ogon.timetracker.rendererer.TimeTrackerRenderer.findByEmailAddr;
 
 
 @RestController
@@ -32,6 +38,7 @@ public class TaskController {
 
 //        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         List<TaskEntity> validTasks = new ArrayList<>();
+        Long userId =0L;
         for (TaskDTO dto : tasks) {
             if (dto.getClient() != null && !dto.getClient().isEmpty()
                     && dto.getTicket() != null && !dto.getTicket().isEmpty()
@@ -40,9 +47,11 @@ public class TaskController {
                     && dto.getBillable() != null && !dto.getBillable().isEmpty()
                     && dto.getDate() != null && !dto.getDate().isEmpty()
                     && dto.getTicketDescription() !=null && !dto.getTicketDescription().isEmpty() ) {
+                ;
+                if(userId == 0) userId = userRepository.findByEmail(dto.getEmail()).get().getId();
 
                 TaskEntity entity = TaskEntity.builder()
-                        .email(dto.getEmail())
+                        .userId(userId)
                         .firstName(dto.getFirstName())
                         .lastName(dto.getLastName())
                         .client(dto.getClient().toUpperCase())
@@ -72,74 +81,212 @@ public class TaskController {
         ));
     }
     @PostMapping("/tasks-new")
-    public ResponseEntity<Map<String, String>> saveTasksNew(@RequestBody List<Map<String, Object>> tasks) {
+    public ResponseEntity<Map<String, Object>> saveTasksNew(@RequestBody List<Map<String, Object>> tasks) {
+
         if (tasks == null || tasks.isEmpty()) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("error", "Task list cannot be empty"));
+            return ResponseEntity.badRequest().body(
+                    Map.of("error", "Task list cannot be empty")
+            );
         }
 
-        List<TaskEntity> validTasks = new ArrayList<>();
-
+        List<TaskEntity> toInsert = new ArrayList<>();
+        List<TaskEntity> toUpdate = new ArrayList<>();
+        List<String> updateLogs = new ArrayList<>();
+        Long user_Id =0L;
         for (Map<String, Object> dto : tasks) {
+
+            Long rowId = dto.get("rowId") != null
+                    ? Long.valueOf(dto.get("rowId").toString())
+                    : null;
+
             String email = (String) dto.get("email");
+            if(user_Id == 0) user_Id = userRepository.findByEmail(email).get().getId();
             String firstName = (String) dto.get("firstName");
             String lastName = (String) dto.get("lastName");
             String client = (String) dto.get("client");
             String ticket = (String) dto.get("ticket");
+            String ticketDescription = (String) dto.get("ticketDescription");
             String category = (String) dto.get("category");
             String description = (String) dto.get("description");
             String billable = (String) dto.get("billable");
-            String ticketDescription = (String) dto.get("ticketDescription");
 
-            // ✅ Extract hoursByDate map safely
             Map<String, Object> hoursByDate = (Map<String, Object>) dto.get("hoursByDate");
+            if (hoursByDate == null || hoursByDate.isEmpty()) continue;
 
-            if (hoursByDate != null && !hoursByDate.isEmpty()) {
-                for (Map.Entry<String, Object> entry : hoursByDate.entrySet()) {
-                    String date = entry.getKey();
-                    Object hoursObj = entry.getValue();
+            /* ===========================================================
+             * 1️⃣ EXISTING WEEKLY GROUP → UPDATE LOGIC
+             * =========================================================== */
+            if (rowId != null) {
 
-                    if (hoursObj == null || hoursObj.toString().isBlank()) continue;
+                List<TaskEntity> existingRows = taskRepository.findByRowId(rowId);
 
-                    double hours;
-                    try {
-                        hours = Double.parseDouble(hoursObj.toString());
-                    } catch (NumberFormatException e) {
-                        continue; // Skip invalid hours
+                if (!existingRows.isEmpty()) {
+
+                    // 1. Detect static field changes
+                    TaskEntity ref = existingRows.get(0);
+                    boolean staticChanged =
+                            !Objects.equals(ref.getClient(), client) ||
+                                    !Objects.equals(ref.getTicket(), ticket) ||
+                                    !Objects.equals(ref.getTicketDescription(), ticketDescription) ||
+                                    !Objects.equals(ref.getCategory(), category) ||
+                                    !Objects.equals(ref.getDescription(), description) ||
+                                    !Objects.equals(ref.getBillable(), billable);
+
+                    // 2. Update existing dates
+                    for (TaskEntity existing : existingRows) {
+                        boolean rowChanged = false; // ✅ NEW FLAG
+                        String date = existing.getDate();
+
+                        Object newHoursObj = hoursByDate.get(date);
+
+                        if (newHoursObj != null) {
+                            double newHours = Double.parseDouble(newHoursObj.toString());
+
+                            if (Double.compare(existing.getHours(), newHours) != 0) {
+                                existing.setHours(newHours);
+                                rowChanged = true;
+                                updateLogs.add("Updated hours | rowId=" + rowId + " date=" + date);
+                            }
+                        }
+                        // Update static fields IF changed
+                        if (staticChanged) {
+                            existing.setClient(client);
+                            existing.setTicket(ticket);
+                            existing.setTicketDescription(ticketDescription);
+                            existing.setCategory(category);
+                            existing.setDescription(description);
+                            existing.setBillable(billable);
+                            existing.setUserId(user_Id);
+                            existing.setFirstName(firstName);
+                            existing.setLastName(lastName);
+                        }
+
+                        if (rowChanged) {
+                            toUpdate.add(existing);
+                        }
                     }
 
-                    // ✅ Create one TaskEntity per date entry
-                    TaskEntity entity = TaskEntity.builder()
-                            .email(email)
-                            .firstName(firstName)
-                            .lastName(lastName)
-                            .client(client != null ? client.toUpperCase() : null)
-                            .ticket(ticket)
-                            .ticketDescription(ticketDescription)
-                            .category(category)
-                            .description(description)
-                            .billable(billable)
-                            .hours(hours)
-                            .date(date) // "dd-MM-yyyy" format from frontend
-                            .build();
+                    // 3. Insert NEW DATES not present in DB
+                    Set<String> existingDates =
+                            existingRows.stream().map(TaskEntity::getDate).collect(Collectors.toSet());
 
-                    validTasks.add(entity);
+                    for (Map.Entry<String, Object> e : hoursByDate.entrySet()) {
+                        String date = e.getKey();
+                        Object hoursObj = e.getValue();
+
+                        if (!existingDates.contains(date)) {
+                            double hours = Double.parseDouble(hoursObj.toString());
+
+                            TaskEntity newRow = TaskEntity.builder()
+                                    .rowId(rowId)
+                                    .userId(user_Id)
+                                    .firstName(firstName)
+                                    .lastName(lastName)
+                                    .client(client)
+                                    .ticket(ticket)
+                                    .ticketDescription(ticketDescription)
+                                    .category(category)
+                                    .description(description)
+                                    .billable(billable)
+                                    .hours(hours)
+                                    .date(date)
+                                    .build();
+
+                            toInsert.add(newRow);
+                            updateLogs.add("Inserted NEW date | rowId=" + rowId + " date=" + date);
+                        }
+                    }
+
+                    continue; // Done with update block
                 }
+            }
+
+            /* ===========================================================
+             * 2️⃣ NEW WEEKLY ENTRY → INSERT LOGIC
+             * =========================================================== */
+
+            rowId = taskRepository.getNextRowId();
+
+            for (Map.Entry<String, Object> e : hoursByDate.entrySet()) {
+                Object hoursObj = e.getValue();
+                if (hoursObj == null || hoursObj.toString().isBlank()) continue;
+
+                double hours = Double.parseDouble(hoursObj.toString());
+                String date = e.getKey();
+
+                TaskEntity entity = TaskEntity.builder()
+                        .rowId(rowId)
+                        .userId(user_Id)
+                        .firstName(firstName)
+                        .lastName(lastName)
+                        .client(client)
+                        .ticket(ticket)
+                        .ticketDescription(ticketDescription)
+                        .category(category)
+                        .description(description)
+                        .billable(billable)
+                        .hours(hours)
+                        .date(date)
+                        .build();
+
+                toInsert.add(entity);
+                updateLogs.add("Inserted NEW weekly row | rowId=" + rowId + " date=" + date);
             }
         }
 
-        if (validTasks.isEmpty()) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(Map.of("error", "No valid tasks found. Please check input data."));
+        // SAVE ALL
+        if (!toInsert.isEmpty()) taskRepository.saveAll(toInsert);
+        if (!toUpdate.isEmpty()) taskRepository.saveAll(toUpdate);
+
+        String message;
+
+        if (!toInsert.isEmpty() && toUpdate.isEmpty()) {
+            message = "Task(s) saved successfully";
+        }
+        else if (toInsert.isEmpty() && !toUpdate.isEmpty()) {
+            message = "Task(s) updated successfully";
+        }
+        else if (!toInsert.isEmpty() && !toUpdate.isEmpty()) {
+            message = "Task(s) saved and updated successfully";
+        }
+        else {
+            message = "Task(s) already saved";
         }
 
-        taskRepository.saveAll(validTasks);
+        return ResponseEntity.ok(
+                Map.of(
+                        "inserted", toInsert.size(),
+                        "updated", toUpdate.size(),
+                        "updateLogs", updateLogs,
+                        "message", message
+                )
+        );
+    }
 
-        return ResponseEntity.ok(Map.of(
-                "message", validTasks.size() + " task(s) saved successfully!"
-        ));
+
+
+    private final TaskService taskService; // instance of TaskService
+    private final UserRepository userRepository;
+
+    @GetMapping("/effort-entry-horizon")
+    public  ResponseEntity<Map<String, Object>> getEffortEntries(
+            @RequestParam String email,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Long user_Id =userRepository.findByEmail(email).get().getId();
+        List<TaskDTO> results =  taskService.getMergedEffortsByDate(user_Id, startDate, endDate);
+
+        Map<String, Object> response = new HashMap<>();
+        if(results.size() > 0 )
+        {
+            response.put("message", "Effort Entries Fetched For This Week");
+            response.put("data", results);
+            return ResponseEntity.ok(response);
+        }
+        response.put("message","No Effort Entries Found");
+//        response.put("data", results);
+       return  ResponseEntity.ok(response);
     }
 
 
@@ -166,9 +313,10 @@ public class TaskController {
         LocalDate startDt = LocalDate.parse(startDate, dbFormatter);
         LocalDate endDt= LocalDate.parse(endDate, dbFormatter);
 
+        Long user_Id = userRepository.findByEmail(email).get().getId();
         // Fetch tasks from DB between startDb and endDb
-        List<TaskEntity> tasks = taskRepository.findByEmailAndDateBetweenString(
-                email,
+        List<TaskEntity> tasks = taskRepository.findByUserIdAndDateBetweenString(
+                user_Id,
                 startDt,
                 endDt
         );
@@ -260,5 +408,111 @@ public class TaskController {
 
             return ResponseEntity.ok(Map.of("data", updatedDTO));}
     }
+
+// ...
+
+    @PostMapping("admin-panel/search")
+    public ResponseEntity<Map<String, Object>> searchAdminSummary(
+            @RequestBody Map<String, Object> payload
+    ) {
+
+        String searchBy   = (String) payload.get("searchBy");
+        String client     = (String) payload.get("client");
+        String startDate  = (String) payload.get("startDate");
+        String endDate    = (String) payload.get("endDate");
+
+        Boolean exportAll = (Boolean) payload.getOrDefault("exportAll", false);
+
+        @SuppressWarnings("unchecked")
+        List<String> emails = (List<String>) payload.get("emails");
+
+        // ===== Validation =====
+        if (searchBy == null || startDate == null || endDate == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid request"));
+        }
+
+        LocalDate startDt = LocalDate.parse(startDate, dbFormatter);
+        LocalDate endDt   = LocalDate.parse(endDate, dbFormatter);
+
+        List<TaskEntity> tasks = new ArrayList<>();
+
+        // ===== Fetch Data =====
+        if ("client".equalsIgnoreCase(searchBy)) {
+
+            tasks = taskRepository.getSummaryByClientAndDateRange(
+                    client, startDt, endDt
+            );
+
+        } else if ("email".equalsIgnoreCase(searchBy)) {
+
+            List<Long> userIds =
+                    taskRepository.findUserIdsByEmailIn(emails);
+
+            if (!userIds.isEmpty()) {
+                tasks = taskRepository.findByUserIdsAndDateBetweenString(
+                        userIds, startDt, endDt
+                );
+            }
+
+        } else if ("both".equalsIgnoreCase(searchBy)) {
+
+            List<Long> userIds =
+                    taskRepository.findUserIdsByEmailIn(emails);
+
+            if (!userIds.isEmpty()) {
+                tasks = taskRepository.getSummaryByClientAndUserIdsAndDateRange(
+                        client, userIds, startDt, endDt
+                );
+            }
+        }
+        List<AdminSummaryDTO> summary = buildSummaryData(tasks);
+
+
+        return ResponseEntity.ok(Map.of("data", summary));
+    }
+    private List<AdminSummaryDTO> buildSummaryData(List<TaskEntity> tasks) {
+
+        Map<String, AdminSummaryDTO> map = new LinkedHashMap<>();
+
+        for (TaskEntity task : tasks) {
+
+            if (task == null || task.getTicket() == null) continue;
+
+            String ticket = task.getTicket();
+
+            AdminSummaryDTO summary = map.get(ticket);
+
+            if (summary == null) {
+                summary = AdminSummaryDTO.builder()
+                        .client(task.getClient())
+                        .ticket(task.getTicket())
+                        .ticketDescription(task.getTicketDescription())
+                        .billableHours(0)
+                        .nonBillableHours(0)
+                        .descriptions(new HashSet<>())
+                        .build();
+
+                map.put(ticket, summary);
+            }
+
+            double hours = task.getHours() != null ? task.getHours() : 0;
+
+            if ("Yes".equalsIgnoreCase(task.getBillable())) {
+                summary.setBillableHours(summary.getBillableHours() + hours);
+            } else {
+                summary.setNonBillableHours(summary.getNonBillableHours() + hours);
+            }
+
+            if (task.getDescription() != null && !task.getDescription().isBlank()) {
+                summary.getDescriptions().add(task.getDescription().trim());
+            }
+        }
+
+        return new ArrayList<>(map.values());
+    }
+
+
+
 }
 
