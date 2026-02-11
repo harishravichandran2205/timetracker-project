@@ -47,4 +47,7 @@ The database configuration is defined in `src/main/resources/application.propert
 	*npm install                          # Install all project dependencies
 	*npm install react-router-dom 
 	*npm install react-icons  # Install required packages
+	*npm install jspdf jspdf-autotable
+	*npm install react-chartjs-2
+	*npm install xlsx-js-style
 	*npm start                              # Start frontend development server
