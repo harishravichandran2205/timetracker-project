@@ -165,6 +165,7 @@ public class TaskController {
 
                         if (rowChanged) {
                             toUpdate.add(existing);
+                            taskRepository.save(existing);
                         }
                     }
 
@@ -195,6 +196,7 @@ public class TaskController {
                                     .build();
 
                             toInsert.add(newRow);
+                            taskRepository.save(newRow);
                             updateLogs.add("Inserted NEW date | rowId=" + rowId + " date=" + date);
                         }
                     }
@@ -232,13 +234,14 @@ public class TaskController {
                         .build();
 
                 toInsert.add(entity);
+                taskRepository.save(entity);
                 updateLogs.add("Inserted NEW weekly row | rowId=" + rowId + " date=" + date);
             }
         }
 
         // SAVE ALL
-        if (!toInsert.isEmpty()) taskRepository.saveAll(toInsert);
-        if (!toUpdate.isEmpty()) taskRepository.saveAll(toUpdate);
+        /*if (!toInsert.isEmpty()) taskRepository.saveAll(toInsert);
+        if (!toUpdate.isEmpty()) taskRepository.saveAll(toUpdate);*/
 
         String message;
 
