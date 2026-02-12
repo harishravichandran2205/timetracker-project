@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import API_BASE_URL from "../config/BackendApiConfig";
 import './css/LoginPage.css';
 import logo from "../assets/images/company-logo.png";
+import { FaLock, FaLockOpen } from "react-icons/fa";
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ const LoginPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const [showPassword, setShowPassword] = useState(false);
 
   // Get success message from registration
   useEffect(() => {
@@ -68,27 +70,40 @@ const LoginPage = () => {
       {successMessage && <h3 className="success-message">{successMessage}</h3>}
 
       <form onSubmit={handleLogin} className="login-form">
-        <div className="form-group">
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+       <div className="form-group">
+         <label>Email:</label>
+         <div className="input-with-icon">
+           <input
+             type="email"
+             value={email}
+             onChange={(e) => setEmail(e.target.value)}
+             required
+           />
+         </div>
+       </div>
 
-        <div className="form-group">
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+    <div className="form-group">
+      <label>Password:</label>
+       <div className="input-with-icon">
+        <input
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        {password && (
+          <span
+            className={`input-icon ${showPassword ? "active" : ""}`}
+            onClick={() => setShowPassword(!showPassword)}
+            title={showPassword ? "Hide password" : "Show password"} >
+            {showPassword ? <FaLockOpen /> : <FaLock />}
+          </span>
+        )}
+      </div>
+    </div>
 
-        {error && <p className="error-message">{error}</p>}
+
+      {error && <p className="error-message">{error}</p>}
          <p className="forgot-password" onClick={() => navigate('/forgot-password')}>
                   Forgot Password?
                 </p>

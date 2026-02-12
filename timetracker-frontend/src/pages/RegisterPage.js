@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './css/RegisterPage.css';
 import API_BASE_URL from "../config/BackendApiConfig";
+import { FaLock, FaLockOpen } from "react-icons/fa";
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -14,11 +15,31 @@ const RegisterPage = () => {
   const [role, setRole] = useState('USER');
   const [message, setMessage] = useState({ text: '', type: '' }); // type: 'error' or 'success'
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const restrictAction = (e) => { e.preventDefault(); setMessage({
+     text: "Copy, paste and cut operations are not allowed in confirm password.",
+     type: "error"
+   });
+  };
+  const handleKeyDownRestriction = (e) => {
+   if (
+     (e.ctrlKey || e.metaKey) &&
+     ["c", "x", "v"].includes(e.key.toLowerCase())
+   ) {
+     e.preventDefault();
+
+     setMessage({
+       text: "Copy, paste and cut operations are not allowed in confirm password.",
+       type: "error"
+     });
+    }
+  };
+
 
   // Auto-hide message after 7 seconds
   useEffect(() => {
     if (message.text) {
-      const timer = setTimeout(() => setMessage({ text: '', type: '' }), 7000);
+      const timer = setTimeout(() => setMessage({ text: '', type: '' }), 5000);
       return () => clearTimeout(timer);
     }
   }, [message]);
@@ -117,24 +138,41 @@ const RegisterPage = () => {
           />
         </div>
 
-        <div className="form-group">
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+     <div className="form-group">
+       <label>Password:</label>
 
-        <div className="form-group">
+       <div className="input-with-icon">
+         <input
+           type={showPassword ? "text" : "password"}
+           value={password}
+           onChange={(e) => setPassword(e.target.value)}
+           required
+         />
+
+         {password && (
+           <span
+             className={`input-icon ${showPassword ? "active" : ""}`}
+             onClick={() => setShowPassword(!showPassword)}
+             title={showPassword ? "Hide password" : "Show password"}
+           >
+             {showPassword ? <FaLockOpen /> : <FaLock />}
+           </span>
+         )}
+       </div>
+     </div>
+
+       <div className="form-group">
           <label>Confirm Password:</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
+         <input
+           type="password"
+           value={confirmPassword}
+           onChange={(e) => setConfirmPassword(e.target.value)}
+           onPaste={restrictAction}
+           onCopy={restrictAction}
+           onCut={restrictAction}
+           onKeyDown={handleKeyDownRestriction}
+           required
+         />
         </div>
 
         <div className="form-group">
@@ -152,7 +190,7 @@ const RegisterPage = () => {
           Register
         </button>
       </form>
-    </div>
+     </div>
   );
 };
 
