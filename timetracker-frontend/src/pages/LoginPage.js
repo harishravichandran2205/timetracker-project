@@ -5,6 +5,7 @@ import API_BASE_URL from "../config/BackendApiConfig";
 import './css/LoginPage.css';
 import logo from "../assets/images/company-logo.png";
 import { FaLock, FaLockOpen } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -26,6 +27,7 @@ const LoginPage = () => {
     }
   }, [location.state?.successMessage]);
 
+  const { login } = useAuth();
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -44,6 +46,7 @@ const LoginPage = () => {
       localStorage.setItem('roles', JSON.stringify(roles));
       console.log(roles);
 
+      login(response.data.data);
       navigate('/dashboard');
     } catch (err) {
       if (err.response) {

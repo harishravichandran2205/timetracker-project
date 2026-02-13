@@ -11,42 +11,49 @@ import DashboardLayout from "./components/DashboardLayout.js";
 import EffortEntryPageHorizon from "./pages/EffortEntryPageHorizontal.js";// Layout with static TopHeader & SideNav
 import AdminPage from "./pages/AdminPage.js";
 import FilteredSummary from "./pages/admin/FilteredSummary";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 
 
 
-function App() {
-  const isAuthenticated = !!localStorage.getItem("token");
+// 1. Create a sub-component for the routes logic
+function AppRoutes() {
+  const { isAuthenticated } = useAuth(); // Destructure to get the boolean
 
   return (
-    <Router>
-      <Routes>
-        {/* Public pages */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Routes>
+      {/* Public pages */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Protected pages wrapped in DashboardLayout */}
-        {isAuthenticated ? (
-          <Route path="/" element={<DashboardLayout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="effort-entry" element={<EffortEntryPage />} />
-            <Route path="summary" element={<SummaryPage />} />
-            <Route path="personal" element={<MyAccountPage />} />
-            <Route path="effort-entry-horizon" element={<EffortEntryPageHorizon />} />
-            <Route path="admin-panel" element={<AdminPage />} />
-             <Route path="/admin/filtered-summary" element={<FilteredSummary />} />
-          </Route>
-        ) : (
-          // If not authenticated, redirect any protected route to login
-          <Route path="*" element={<Navigate to="/login" />} />
-        )}
+      {/* Protected pages wrapped in DashboardLayout */}
+      {isAuthenticated ? (
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="effort-entry" element={<EffortEntryPage />} />
+          <Route path="summary" element={<SummaryPage />} />
+          <Route path="personal" element={<MyAccountPage />} />
+          <Route path="effort-entry-horizon" element={<EffortEntryPageHorizon />} />
+          <Route path="admin-panel" element={<AdminPage />} />
+          <Route path="/admin/filtered-summary" element={<FilteredSummary />} />
+        </Route>
+      ) : (
+        /* If not authenticated, redirect any unknown/protected route to login */
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      )}
+    </Routes>
+  );
+}
 
-        {/* Catch-all redirect */}
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
-    </Router>
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
   );
 }
 
