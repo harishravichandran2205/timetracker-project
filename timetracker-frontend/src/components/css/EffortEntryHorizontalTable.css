@@ -72,6 +72,16 @@
   background-color: #e8f0ff;
 }
 
+.horizontal-effort-table .total-hours-row td {
+  background: #f5f8ff;
+  font-weight: 600;
+}
+
+.horizontal-effort-table .total-hours-row td:first-child {
+  text-align: left;
+  padding-left: 12px;
+}
+
 .horizontal-effort-table tr.duplicate-row td {
   background-color: #fff1f1 !important;
   border-top: 2px solid #ff4d4f;
@@ -104,6 +114,12 @@
   border-radius: 4px;
   box-sizing: border-box;
   font-size: 13px;
+}
+
+.horizontal-effort-table input[type="checkbox"] {
+  width: auto;
+  transform: scale(1.1);
+  cursor: pointer;
 }
 
 .horizontal-effort-table td input[type="number"] {
@@ -165,18 +181,50 @@
 
 .horizontal-effort-table th:nth-child(6), /* Billable */
 .horizontal-effort-table td:nth-child(6) {
-  min-width: 60px;
-  width: 70px;
+  min-width: 42px;
+  width: 42px;
+  max-width: 42px;
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: 11px;
 }
 
 /* ALL Date Columns Smaller (1 Dec, 2 Dec, 3 Dec, ... ) */
 /* Make ALL date columns equal width */
 .horizontal-effort-table th:nth-child(n+7):not(:last-child),
 .horizontal-effort-table td:nth-child(n+7):not(:last-child) {
-  min-width: 55px;
-  width: 55px;
-  font-size: 12px;
-  padding: 4px 2px;
+  min-width: 50px;
+  width: 50px;
+  max-width: 50px;
+  font-size: 11px;
+  padding: 3px 2px;
+  white-space: nowrap;
+}
+
+.horizontal-effort-table th.date-col,
+.horizontal-effort-table td.date-col {
+  min-width: 50px !important;
+  width: 50px !important;
+  max-width: 50px !important;
+  padding: 3px 2px !important;
+}
+
+.horizontal-effort-table th.date-col {
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.date-header-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.horizontal-effort-table td.date-col input[type="number"] {
+  max-width: 40px;
+  min-width: 40px;
+  padding: 2px;
+  font-size: 11px;
 }
 
 /* Action column (last one) */

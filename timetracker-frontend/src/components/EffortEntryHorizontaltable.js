@@ -18,6 +18,19 @@ const HorizontalEffortTable = ({
   showValidation,
   duplicateRowIndexes = [],
 }) => {
+  const renderDateHeader = (date) => {
+    const match = /^(\d+)\s+([A-Za-z]{3})\s+\(([^)]+)\)$/.exec(date);
+    if (!match) return date;
+
+    const [, day, month, weekDay] = match;
+    return (
+      <span className="date-header-wrap">
+        <span>{`${day} ${month}`}</span>
+        <span>{`(${weekDay})`}</span>
+      </span>
+    );
+  };
+
   const [actionPopup, setActionPopup] = useState({
     open: false,
     rowIndex: null,
@@ -60,6 +73,18 @@ const HorizontalEffortTable = ({
     return hasHours || hasMainFields;
   };
 
+  const getTotalForDate = (date) =>
+    rows.reduce((sum, row) => {
+      const raw = row?.hoursByDate?.[date];
+      const value = Number.parseFloat(raw);
+      return Number.isFinite(value) ? sum + value : sum;
+    }, 0);
+
+  const formatTotal = (value) => {
+    if (!Number.isFinite(value)) return "0";
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  };
+
   return (
     <div className="horizontal-effort-table-wrapper">
       <table className="horizontal-effort-table">
@@ -73,7 +98,7 @@ const HorizontalEffortTable = ({
             <th>Billable</th>
             {dateColumns.map((date) => (
               <th key={date} className="date-col">
-                {date.split("-")[0]}
+                {renderDateHeader(date)}
               </th>
             ))}
             <th>Action</th>
@@ -188,17 +213,14 @@ const HorizontalEffortTable = ({
 
                 {/* BILLABLE */}
                 <td>
-                  <select
-                    value={row.billable ?? ""}
+                  <input
+                    type="checkbox"
                     className={needs(!row.billable)}
+                    checked={row.billable === "Yes"}
                     onChange={(e) =>
-                      handleChange(rowIndex, "billable", e.target.value)
+                      handleChange(rowIndex, "billable", e.target.checked ? "Yes" : "No")
                     }
-                  >
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
+                  />
                 </td>
 
                 {/* HOURS */}
@@ -248,6 +270,15 @@ const HorizontalEffortTable = ({
 
             </tr>
           )})}
+          <tr className="total-hours-row">
+            <td colSpan={6}>Total Hours</td>
+            {dateColumns.map((date) => (
+              <td key={`total-${date}`} className="date-col">
+                {formatTotal(getTotalForDate(date))}
+              </td>
+            ))}
+            <td></td>
+          </tr>
         </tbody>
       </table>
       {actionPopup.open && (

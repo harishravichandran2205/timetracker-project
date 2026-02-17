@@ -4,7 +4,6 @@ import axios from "axios";
 import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import HorizontalEffortTable from "../components/EffortEntryHorizontaltable.js";
-import DailyTotalHoursTable from "../components/DailyTotalHoursTable.js";
 import UnsavedChangesModal from "../components/UnsavedChangesModel";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/EffortEntryPageHorizontal.css";
@@ -349,6 +348,11 @@ const EffortEntryPageHorizontal = () => {
     const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     while (current <= end) {
+      if (mode === "weekly" && (current.getDay() === 0 || current.getDay() === 6)) {
+        current.setDate(current.getDate() + 1);
+        continue;
+      }
+
       const day = current.getDate();
       const month = monthNames[current.getMonth()];
       const weekday = dayNames[current.getDay()];
@@ -957,11 +961,6 @@ const handleDescriptionCancel = () => {
                   duplicateRowIndexes={duplicateRowIndexes}
                 />
               </div>
-
-              <DailyTotalHoursTable
-                rows={rows}
-                dateColumns={getDateColumns()}
-              />
 
               {showBottomSave && (
                 <div className="bottom-save-btn">

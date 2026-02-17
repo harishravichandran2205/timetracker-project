@@ -17,24 +17,15 @@ const DailyTotalHoursTable = ({ rows = [], dateColumns = [] }) => {
   return (
     <div className="daily-total-hours-wrapper">
       <table className="daily-total-hours-table">
-        <thead>
-          <tr>
-            <th className="label-col">Daily Totals</th>
-            {dateColumns.map((date) => (
-              <th key={date} className="date-col">
-                {date}
-              </th>
-            ))}
-          </tr>
-        </thead>
         <tbody>
           <tr>
-            <td className="label-col">Total Hours</td>
+            <td className="label-col" colSpan={6}>Total Hours</td>
             {dateColumns.map((date) => (
               <td key={date} className="date-col">
                 {formatTotal(getTotalForDate(date))}
               </td>
             ))}
+            <td className="date-col"></td>
           </tr>
         </tbody>
       </table>
