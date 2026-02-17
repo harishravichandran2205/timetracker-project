@@ -3,6 +3,7 @@ import GetSummary from "../components/GetSummary";
 import AddUserRole from "../components/AddUserRole";
 import AddTaskType from "../components/AddTaskType";
 import AddClient from "../components/AddClient";
+import AddProjectForClient from "../components/AddProjectForClient";
 import "./css/AdminPage.css";
 
 const AdminPage = () => {
@@ -18,6 +19,8 @@ const AdminPage = () => {
         return <AddTaskType />;
       case "client":
         return <AddClient />;
+      case "projectForClient":
+        return <AddProjectForClient />;
       default:
         return <p>Please select an option above</p>;
     }
@@ -67,6 +70,16 @@ const AdminPage = () => {
             onChange={(e) => setSelectedOption(e.target.value)}
           />
           Add Client
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            name="adminOption"
+            value="projectForClient"
+            onChange={(e) => setSelectedOption(e.target.value)}
+          />
+          Add Project for Client
         </label>
       </div>
 

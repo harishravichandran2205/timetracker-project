@@ -9,6 +9,7 @@ import java.util.Set;
 public class AdminSummaryDTO {
 
     private String client;
+    private String project;
     private String ticket;
     private String ticketDescription;
 

@@ -1,13 +1,16 @@
 package com.ogon.timetracker.controllers;
 
 import com.ogon.timetracker.dto.ClientReqDto;
+import com.ogon.timetracker.dto.ProjectDto;
 import com.ogon.timetracker.dto.TaskTypeDto;
 import com.ogon.timetracker.dto.UserRoleDto;
 import com.ogon.timetracker.entities.ClientEntity;
+import com.ogon.timetracker.entities.ProjectEntity;
 import com.ogon.timetracker.entities.TaskTypeEntity;
 import com.ogon.timetracker.entities.User;
 import com.ogon.timetracker.enums.Role;
 import com.ogon.timetracker.repositories.ClientRepository;
+import com.ogon.timetracker.repositories.ProjectRepository;
 import com.ogon.timetracker.repositories.TaskTypeRepository;
 import com.ogon.timetracker.repositories.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +28,15 @@ public class ClientController {
     private final UserRepository userRepository;
 
     private final TaskTypeRepository taskTypeRepository;
+    private final ProjectRepository projectRepository;
 
     public ClientController(ClientRepository clientRepository,
-                            TaskTypeRepository taskTypeRepository, UserRepository userRepository) {
+                            TaskTypeRepository taskTypeRepository,
+                            ProjectRepository projectRepository,
+                            UserRepository userRepository) {
         this.clientRepository = clientRepository;
         this.taskTypeRepository = taskTypeRepository;
+        this.projectRepository = projectRepository;
         this.userRepository = userRepository;
     }
 
@@ -254,6 +261,96 @@ public class ClientController {
                 taskTypeRepository.findTaskNamesByClient(client);
 
         return ResponseEntity.ok(taskNames); // 🔥 RETURN ARRAY ONLY
+    }
+
+    @PostMapping("/project/add")
+    public ResponseEntity<?> addProject(@RequestBody ProjectDto req) {
+        if (req.getClientCode() == null || req.getClientCode().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Client Code is required"));
+        }
+
+        if (req.getProject() == null || req.getProject().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Project is required"));
+        }
+
+        ClientEntity client = clientRepository
+                .findByClientCd(req.getClientCode().toUpperCase())
+                .orElse(null);
+
+        if (client == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid Client Code"));
+        }
+
+        if (projectRepository.existsByProjectNameIgnoreCaseAndClient(req.getProject().trim(), client)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Project already exists for this client"));
+        }
+
+        ProjectEntity entity = new ProjectEntity();
+        entity.setProjectName(req.getProject().trim());
+        entity.setClient(client);
+        projectRepository.save(entity);
+
+        return ResponseEntity.ok(Map.of("message", "Project added successfully"));
+    }
+
+    @PostMapping("/project/delete")
+    public ResponseEntity<?> deleteProject(@RequestBody ProjectDto req) {
+        ClientEntity client = clientRepository
+                .findByClientCd(req.getClientCode().toUpperCase())
+                .orElse(null);
+
+        if (client == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid Client Code"));
+        }
+
+        ProjectEntity project = projectRepository
+                .findByProjectNameIgnoreCaseAndClient(req.getProject(), client)
+                .orElse(null);
+
+        if (project == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Project not found"));
+        }
+
+        projectRepository.delete(project);
+        return ResponseEntity.ok(Map.of("message", "Project deleted successfully"));
+    }
+
+    @PostMapping("/project/modify")
+    public ResponseEntity<?> modifyProject(@RequestBody ProjectDto req) {
+        ClientEntity client = clientRepository
+                .findByClientCd(req.getClientCode().toUpperCase())
+                .orElse(null);
+
+        if (client == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid Client Code"));
+        }
+
+        ProjectEntity existing = projectRepository
+                .findByProjectNameIgnoreCaseAndClient(req.getOldProject(), client)
+                .orElse(null);
+
+        if (existing == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Old Project not found"));
+        }
+
+        if (projectRepository.existsByProjectNameIgnoreCaseAndClient(req.getNewProject(), client)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "New Project already exists"));
+        }
+
+        existing.setProjectName(req.getNewProject().trim());
+        projectRepository.save(existing);
+        return ResponseEntity.ok(Map.of("message", "Project updated successfully"));
+    }
+
+    @GetMapping("/projects/{clientCode}")
+    public ResponseEntity<List<String>> getProjectsByClient(@PathVariable String clientCode) {
+        ClientEntity client = clientRepository
+                .findByClientCd(clientCode.toUpperCase())
+                .orElseThrow(() -> new RuntimeException("Invalid Client Code"));
+
+        List<String> projects = projectRepository.findProjectNamesByClient(client);
+        return ResponseEntity.ok(projects);
     }
 
     @PostMapping("/user-role")

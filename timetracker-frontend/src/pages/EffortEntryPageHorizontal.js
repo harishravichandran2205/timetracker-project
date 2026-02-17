@@ -74,6 +74,7 @@ const EffortEntryPageHorizontal = () => {
   };
 
   const [taskTypeOptions, setTaskTypeOptions] = useState([[]]);
+  const [projectOptions, setProjectOptions] = useState([[]]);
 
   useEffect(() => {
     setTaskTypeOptions((prev) => {
@@ -85,6 +86,22 @@ const EffortEntryPageHorizontal = () => {
       }
 
       // trim if rows removed
+      if (copy.length > rows.length) {
+        copy.length = rows.length;
+      }
+
+      return copy;
+    });
+  }, [rows.length]);
+
+  useEffect(() => {
+    setProjectOptions((prev) => {
+      const copy = Array.isArray(prev) ? [...prev] : [];
+
+      while (copy.length < rows.length) {
+        copy.push([]);
+      }
+
       if (copy.length > rows.length) {
         copy.length = rows.length;
       }
@@ -115,6 +132,32 @@ const EffortEntryPageHorizontal = () => {
       });
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchProjectsForRow = async (rowIndex, clientCode) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `${API_BASE_URL}/api/admin-panel/projects/${clientCode}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      setProjectOptions((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const copy = [...safePrev];
+        copy[rowIndex] = list;
+        return copy;
+      });
+    } catch (err) {
+      console.error(err);
+      setProjectOptions((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const copy = [...safePrev];
+        copy[rowIndex] = [];
+        return copy;
+      });
     }
   };
 
@@ -153,29 +196,20 @@ const EffortEntryPageHorizontal = () => {
 
       try {
         const token = localStorage.getItem("token");
-
-        const [clientsRes, categoriesRes] = await Promise.all([
-          axios.get(
-            `${API_BASE_URL}/api/admin-panel/client-codes`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          ),
-          axios.get(
-            `${API_BASE_URL}/api/options/categories`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-        ]);
-
-        console.log("CLIENT RESPONSE:", clientsRes.data);
+        const clientsRes = await axios.get(
+          `${API_BASE_URL}/api/admin-panel/client-codes`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
         const extractArray = (res) => {
           if (Array.isArray(res?.data.data)) return res.data.data;
-          if (Array.isArray(res?.data?.data)) return res.data.data;
+          if (Array.isArray(res?.data)) return res.data;
           if (Array.isArray(res)) return res;
           return [];
         };
 
         setClientOptions(extractArray(clientsRes));
-        setCategoryOptions(extractArray(categoriesRes));
+        setCategoryOptions([]);
 
       } catch (err) {
         console.error("Failed to fetch options", err);
@@ -192,6 +226,7 @@ const EffortEntryPageHorizontal = () => {
   const createNewRow = () => ({
     rowId: null,
     client: "",
+    project: "",
     ticket: "",
     ticketDescription: "",
     category: "",
@@ -325,17 +360,17 @@ const EffortEntryPageHorizontal = () => {
     const newRows = [...rows];
     newRows[rowIndex][field] = value;
 
-    // 🔥 RESET category immediately
     if (field === "client") {
       newRows[rowIndex].category = "";
+      newRows[rowIndex].project = "";
     }
 
     setRows(newRows);
     setIsDirty(true);
 
-    // 🔥 FETCH TASK TYPES AFTER ROW UPDATE
     if (field === "client" && value) {
       fetchTaskTypesForRow(rowIndex, value);
+      fetchProjectsForRow(rowIndex, value);
     }
   };
 
@@ -374,12 +409,26 @@ const EffortEntryPageHorizontal = () => {
 
   const handleAddRow = () => {
     setRows((prev) => [...prev, createNewRow()]);
-    setTaskTypeOptions((prev) => [...prev, []]); // 🔥 keep index alignment
+    setTaskTypeOptions((prev) => [...prev, []]);
+    setProjectOptions((prev) => [...prev, []]);
   };
 
 
   const showPopup = (msg, type = "success") => {
-    setPopup({ message: msg, type });
+    const normalizedMessage =
+      typeof msg === "string"
+        ? msg
+        : msg?.message
+        ? String(msg.message)
+        : msg?.error
+        ? String(msg.error)
+        : Array.isArray(msg)
+        ? msg.map((m) => (typeof m === "string" ? m : JSON.stringify(m))).join(", ")
+        : msg
+        ? JSON.stringify(msg)
+        : "";
+
+    setPopup({ message: normalizedMessage, type });
     setTimeout(() => setPopup({ message: "", type: "" }), 3000);
   };
 
@@ -398,6 +447,7 @@ const EffortEntryPageHorizontal = () => {
      );
      const hasMainFields = [
        r.client,
+       r.project,
        r.ticket,
        r.ticketDescription,
        r.category,
@@ -423,21 +473,14 @@ const EffortEntryPageHorizontal = () => {
      const hasHours = Object.values(r.hoursByDate || {}).some(
        (v) => v && v.toString().trim() !== ""
      );
-     const hasMainFields = [
-       r.client,
-       r.ticket,
-       r.ticketDescription,
-       r.category,
-       r.billable,
-       r.description,
-     ].some((v) => v && v.toString().trim() !== "");
 
      return !r.client ||
+       !r.project ||
        !r.ticket ||
        !r.ticketDescription ||
        !r.category ||
        !r.billable ||
-       !r.description ||
+
        !hasHours;
    });
 
@@ -531,6 +574,7 @@ const EffortEntryPageHorizontal = () => {
        firstName,
        lastName,
        client: row.client,
+       project: row.project,
        ticket: row.ticket,
        ticketDescription: row.ticketDescription,
        category: row.category,
@@ -621,16 +665,23 @@ const EffortEntryPageHorizontal = () => {
        },
      });
 
-     // ✅ Backend can return array or wrapped {data: []}
-     const entries  = Array.isArray(response.data.data.data) ?response.data.data.data : [];
-       console.log(response.data.data.data);
-       console.log("entries");
-       console.log( response.data.data.data);
+     const root = response?.data;
+     const wrapped = root?.data;
+     const entries = Array.isArray(wrapped?.data)
+       ? wrapped.data
+       : Array.isArray(wrapped)
+       ? wrapped
+       : Array.isArray(root?.data)
+       ? root.data
+       : Array.isArray(root)
+       ? root
+       : [];
 
      // ✅ Convert API shape directly into your row structure
      const mappedRows = entries.map((entry) => ({
        rowId: entry.rowId ?? entry.row_id ?? entry.rowID ?? null,
        client: entry.client || "",
+       project: entry.project || "",
        ticket: entry.ticket || "",
        ticketDescription: entry.ticketDescription || "",
        category: entry.category || "",
@@ -646,18 +697,32 @@ const EffortEntryPageHorizontal = () => {
      finalRows.forEach((r, index) => {
        if (r.client) {
          fetchTaskTypesForRow(index, r.client);
+         fetchProjectsForRow(index, r.client);
        }
      });
 
      // ✅ SNAPSHOT MUST MATCH ROWS
      setSavedRowsSnapshot(JSON.parse(JSON.stringify(finalRows)));
-     if(showMessage){
-        showPopup(response.data.data.message, "success");
+     if (showMessage) {
+       const okMessage =
+         wrapped?.message ||
+         root?.message ||
+         (entries.length > 0
+           ? "Effort Entries Fetched For This Week"
+           : "No Effort Entries Found");
+       showPopup(okMessage, "success");
      }
 
    } catch (err) {
      console.error("Failed to fetch effort entries:", err);
-     showPopup("Failed to load effort entries", "error");
+     const errMsg =
+       err?.response?.data?.error ||
+       err?.response?.data?.message ||
+       err?.response?.data?.data?.error ||
+       err?.response?.data?.data?.message ||
+       err?.message ||
+       "Failed to load effort entries";
+     showPopup(errMsg, "error");
    }
  };
 
@@ -791,6 +856,7 @@ const handleDescriptionCancel = () => {
                   clients={clientOptions}
                   categories={categoryOptions}
                   taskTypeOptions={taskTypeOptions}
+                  projectOptions={projectOptions}
                   dateColumns={getDateColumns()}
                   handleChange={handleChange}
                   handleDeleteRow={handleDeleteRow}
@@ -851,3 +917,4 @@ const handleDescriptionCancel = () => {
 };
 
 export default EffortEntryPageHorizontal;
+

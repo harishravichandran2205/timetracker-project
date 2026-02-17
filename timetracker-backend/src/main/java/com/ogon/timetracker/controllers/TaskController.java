@@ -55,6 +55,7 @@ public class TaskController {
                         .firstName(dto.getFirstName())
                         .lastName(dto.getLastName())
                         .client(dto.getClient().toUpperCase())
+                        .project(dto.getProject())
                         .ticket(dto.getTicket())
                         .category(dto.getCategory())
                         .description(dto.getDescription())
@@ -104,6 +105,7 @@ public class TaskController {
             String firstName = (String) dto.get("firstName");
             String lastName = (String) dto.get("lastName");
             String client = (String) dto.get("client");
+            String project = (String) dto.get("project");
             String ticket = (String) dto.get("ticket");
             String ticketDescription = (String) dto.get("ticketDescription");
             String category = (String) dto.get("category");
@@ -126,6 +128,7 @@ public class TaskController {
                     TaskEntity ref = existingRows.get(0);
                     boolean staticChanged =
                             !Objects.equals(ref.getClient(), client) ||
+                                    !Objects.equals(ref.getProject(), project) ||
                                     !Objects.equals(ref.getTicket(), ticket) ||
                                     !Objects.equals(ref.getTicketDescription(), ticketDescription) ||
                                     !Objects.equals(ref.getCategory(), category) ||
@@ -151,6 +154,7 @@ public class TaskController {
                         // Update static fields IF changed
                         if (staticChanged) {
                             existing.setClient(client);
+                            existing.setProject(project);
                             existing.setTicket(ticket);
                             existing.setTicketDescription(ticketDescription);
                             existing.setCategory(category);
@@ -186,6 +190,7 @@ public class TaskController {
                                     .firstName(firstName)
                                     .lastName(lastName)
                                     .client(client)
+                                    .project(project)
                                     .ticket(ticket)
                                     .ticketDescription(ticketDescription)
                                     .category(category)
@@ -224,6 +229,7 @@ public class TaskController {
                         .firstName(firstName)
                         .lastName(lastName)
                         .client(client)
+                        .project(project)
                         .ticket(ticket)
                         .ticketDescription(ticketDescription)
                         .category(category)
@@ -331,6 +337,7 @@ public class TaskController {
                 .map(t -> TaskDTO.builder()
                         .id(t.getId())
                         .client(t.getClient())
+                        .project(t.getProject())
                         .ticket(t.getTicket())
                         .ticketDescription(t.getTicketDescription())
                         .category(t.getCategory())
@@ -371,6 +378,7 @@ public class TaskController {
         boolean isChanged = false;
 
         if (!Objects.equals(task.getClient(), taskDTO.getClient())) isChanged = true;
+        if (!Objects.equals(task.getProject(), taskDTO.getProject())) isChanged = true;
         if (!Objects.equals(task.getTicket(), taskDTO.getTicket())) isChanged = true;
         if (!Objects.equals(task.getTicketDescription(), taskDTO.getTicketDescription())) isChanged = true;
         if (!Objects.equals(task.getCategory(), taskDTO.getCategory())) isChanged = true;
@@ -387,6 +395,7 @@ public class TaskController {
 
             // Update fields from DTO
             task.setClient(taskDTO.getClient().toUpperCase());
+            task.setProject(taskDTO.getProject());
             task.setTicket(taskDTO.getTicket());
             task.setTicketDescription(taskDTO.getTicketDescription());
             task.setCategory(taskDTO.getCategory());
@@ -402,6 +411,7 @@ public class TaskController {
             TaskDTO updatedDTO = TaskDTO.builder()
                     .id(updatedTask.getId())
                     .client(updatedTask.getClient())
+                    .project(updatedTask.getProject())
                     .ticket(updatedTask.getTicket())
                     .ticketDescription(updatedTask.getTicketDescription())
                     .category(updatedTask.getCategory())
@@ -484,13 +494,19 @@ public class TaskController {
 
             if (task == null || task.getTicket() == null) continue;
 
-            String ticket = task.getTicket();
+            String key = String.join("||",
+                    Objects.toString(task.getClient(), ""),
+                    Objects.toString(task.getProject(), ""),
+                    Objects.toString(task.getTicket(), ""),
+                    Objects.toString(task.getTicketDescription(), "")
+            );
 
-            AdminSummaryDTO summary = map.get(ticket);
+            AdminSummaryDTO summary = map.get(key);
 
             if (summary == null) {
                 summary = AdminSummaryDTO.builder()
                         .client(task.getClient())
+                        .project(task.getProject())
                         .ticket(task.getTicket())
                         .ticketDescription(task.getTicketDescription())
                         .billableHours(0)
@@ -498,7 +514,7 @@ public class TaskController {
                         .descriptions(new HashSet<>())
                         .build();
 
-                map.put(ticket, summary);
+                map.put(key, summary);
             }
 
             double hours = task.getHours() != null ? task.getHours() : 0;

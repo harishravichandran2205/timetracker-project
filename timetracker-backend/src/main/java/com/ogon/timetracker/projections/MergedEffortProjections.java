@@ -3,6 +3,7 @@ package com.ogon.timetracker.projections;
 public interface MergedEffortProjections {
     Long getRowId();
     String getClient();
+    String getProject();
     String getTicket();
     String getTicketDescription();
     String getCategory();

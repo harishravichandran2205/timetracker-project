@@ -122,43 +122,43 @@
 .horizontal-effort-table th:nth-child(1), /* Client */
 .horizontal-effort-table td:nth-child(1) {
   min-width: 70px;
-  width: 130px;
+  width: 120px;
 }
 
-.horizontal-effort-table th:nth-child(2), /* Ticket */
+.horizontal-effort-table th:nth-child(2), /* Project */
 .horizontal-effort-table td:nth-child(2) {
   min-width: 120px;
   width: 150px;
 }
 
-.horizontal-effort-table th:nth-child(3), /* Ticket Description */
+.horizontal-effort-table th:nth-child(3), /* Ticket */
 .horizontal-effort-table td:nth-child(3) {
   min-width: 130px;
-  width: 200px;
+  width: 140px;
 }
 
-.horizontal-effort-table th:nth-child(4), /* Category */
+.horizontal-effort-table th:nth-child(4), /* Ticket Description */
 .horizontal-effort-table td:nth-child(4) {
   min-width: 130px;
-  width: 150px;
+  width: 220px;
 }
 
-.horizontal-effort-table th:nth-child(5), /* Billable */
+.horizontal-effort-table th:nth-child(5), /* Category */
 .horizontal-effort-table td:nth-child(5) {
+  min-width: 140px;
+  width: 160px;
+}
+
+.horizontal-effort-table th:nth-child(6), /* Billable */
+.horizontal-effort-table td:nth-child(6) {
   min-width: 60px;
   width: 70px;
 }
 
-.horizontal-effort-table th:nth-child(6), /* Description */
-.horizontal-effort-table td:nth-child(6) {
-  min-width: 150px;
-  width: 220px;
-}
-
 /* ALL Date Columns Smaller (1 Dec, 2 Dec, 3 Dec, ... ) */
 /* Make ALL date columns equal width */
-.horizontal-effort-table th:nth-child(n+6):not(:last-child),
-.horizontal-effort-table td:nth-child(n+6):not(:last-child) {
+.horizontal-effort-table th:nth-child(n+7):not(:last-child),
+.horizontal-effort-table td:nth-child(n+7):not(:last-child) {
   min-width: 55px;
   width: 55px;
   font-size: 12px;

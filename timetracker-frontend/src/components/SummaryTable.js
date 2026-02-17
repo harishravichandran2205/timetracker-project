@@ -1,5 +1,5 @@
 // SummaryTable.js
-import React, { forwardRef, useImperativeHandle } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/SummaryTable.css";
@@ -13,11 +13,74 @@ const SummaryTable = forwardRef(({
   clientOptions = [],
   categoryOptions = [],
 }, ref) => {
+  const [taskTypeOptionsByRow, setTaskTypeOptionsByRow] = useState({});
+  const [projectOptionsByRow, setProjectOptionsByRow] = useState({});
+
+  const fetchTaskTypesForRow = async (rowIndex, clientCode) => {
+    if (!clientCode) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `${API_BASE_URL}/api/admin-panel/task-types/${clientCode}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setTaskTypeOptionsByRow((prev) => ({ ...prev, [rowIndex]: list }));
+    } catch (err) {
+      console.error("Failed to fetch category options", err);
+      setTaskTypeOptionsByRow((prev) => ({ ...prev, [rowIndex]: [] }));
+    }
+  };
+
+  const fetchProjectsForRow = async (rowIndex, clientCode) => {
+    if (!clientCode) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `${API_BASE_URL}/api/admin-panel/projects/${clientCode}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setProjectOptionsByRow((prev) => ({ ...prev, [rowIndex]: list }));
+    } catch (err) {
+      console.error("Failed to fetch project options", err);
+      setProjectOptionsByRow((prev) => ({ ...prev, [rowIndex]: [] }));
+    }
+  };
+
+  const fetchDependentOptionsForRow = async (rowIndex, clientCode) => {
+    if (!clientCode) return;
+    await Promise.all([
+      fetchTaskTypesForRow(rowIndex, clientCode),
+      fetchProjectsForRow(rowIndex, clientCode),
+    ]);
+  };
+
+  useEffect(() => {
+    summaryData.forEach((task, idx) => {
+      if (!task?.isEditing || !task?.client) return;
+
+      const hasTaskTypes = Object.prototype.hasOwnProperty.call(taskTypeOptionsByRow, idx);
+      const hasProjects = Object.prototype.hasOwnProperty.call(projectOptionsByRow, idx);
+
+      if (!hasTaskTypes) fetchTaskTypesForRow(idx, task.client);
+      if (!hasProjects) fetchProjectsForRow(idx, task.client);
+    });
+  }, [summaryData, taskTypeOptionsByRow, projectOptionsByRow]);
 
   const handleChange = (index, field, value) => {
     const newData = [...summaryData];
     newData[index][field] = value;
     newData[index].isEditing = true;
+
+    if (field === "client") {
+      newData[index].project = "";
+      newData[index].category = "";
+      setProjectOptionsByRow((prev) => ({ ...prev, [index]: [] }));
+      setTaskTypeOptionsByRow((prev) => ({ ...prev, [index]: [] }));
+      fetchDependentOptionsForRow(index, value);
+    }
+
     setSummaryData(newData);
   };
 
@@ -25,6 +88,7 @@ const SummaryTable = forwardRef(({
     const newData = [...summaryData];
     newData[index].isEditing = true;
     setSummaryData(newData);
+    fetchDependentOptionsForRow(index, newData[index].client);
   };
 
   const cancelEdit = (index) => {
@@ -92,6 +156,7 @@ const SummaryTable = forwardRef(({
             <tr>
               <th>Date</th>
               <th>Client</th>
+              <th>Project</th>
               <th>Ticket</th>
               <th>Ticket Desc</th>
               <th>Category</th>
@@ -149,6 +214,31 @@ const SummaryTable = forwardRef(({
 
                   <td>
                     {task.isEditing ? (
+                      <select
+                        value={task.project || ""}
+                        onChange={(e) => handleChange(idx, "project", e.target.value)}
+                        disabled={!task.client}
+                      >
+                        <option value="">
+                          {!task.client
+                            ? "Select Client First"
+                            : (projectOptionsByRow[idx]?.length ?? 0) === 0
+                            ? "No Projects Found"
+                            : "Select Project"}
+                        </option>
+                        {(projectOptionsByRow[idx] || []).map((project) => (
+                          <option key={project} value={project}>
+                            {project}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      task.project
+                    )}
+                  </td>
+
+                  <td>
+                    {task.isEditing ? (
                       <input
                         type="text"
                         value={task.ticket || ""}
@@ -178,9 +268,16 @@ const SummaryTable = forwardRef(({
                       <select
                         value={task.category || ""}
                         onChange={(e) => handleChange(idx, "category", e.target.value)}
+                        disabled={!task.client}
                       >
-                        <option value="">Select</option>
-                        {categoryOptions.map((cat) => (
+                        <option value="">
+                          {!task.client
+                            ? "Select Client First"
+                            : (taskTypeOptionsByRow[idx]?.length ?? 0) === 0
+                            ? "No Categories Found"
+                            : "Select Category"}
+                        </option>
+                        {(taskTypeOptionsByRow[idx] || categoryOptions).map((cat) => (
                           <option key={cat} value={cat}>
                             {cat}
                           </option>
@@ -252,7 +349,7 @@ const SummaryTable = forwardRef(({
               ))
             ) : (
               <tr>
-                <td colSpan={9} className="no-data">
+                <td colSpan={10} className="no-data">
                   No data available for selected range.
                 </td>
               </tr>

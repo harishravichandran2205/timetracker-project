@@ -8,6 +8,7 @@ const HorizontalEffortTable = ({
   categories = [], // kept as-is
   dateColumns = [],
   taskTypeOptions = [], // SAFE DEFAULT
+  projectOptions = [],
   handleChange,
   handleDeleteRow,
   handleAddRow,
@@ -23,6 +24,7 @@ const HorizontalEffortTable = ({
 
     const hasMainFields = [
       row.client,
+      row.project,
       row.ticket,
       row.ticketDescription,
       row.category,
@@ -38,6 +40,7 @@ const HorizontalEffortTable = ({
         <thead>
           <tr>
             <th>Client</th>
+            <th>Project</th>
             <th>Ticket</th>
             <th>Ticket Description</th>
             <th>Category</th>
@@ -73,6 +76,27 @@ const HorizontalEffortTable = ({
 
                   {clients.map((c) => (
                     <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </td>
+              <td>
+                <select
+                  value={row.project ?? ""}
+                  className={needs(!row.project)}
+                  onChange={(e) => handleChange(rowIndex, "project", e.target.value)}
+                  disabled={!row.client}
+                >
+                  <option value="">
+                    {!row.client
+                      ? "Select Client First"
+                      : (projectOptions[rowIndex]?.length ?? 0) === 0
+                      ? "No Projects Found"
+                      : "Select Project"}
+                  </option>
+                  {(projectOptions[rowIndex] || []).map((p, i) => (
+                    <option key={`${rowIndex}-project-${i}`} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               </td>

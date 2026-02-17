@@ -17,6 +17,7 @@ public class TaskDTO {
     private String firstName;
     private String lastName;
     private String client;
+    private String project;
     private String ticket;
     private String ticketDescription;
     private String category;

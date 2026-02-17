@@ -1,14 +1,21 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import TopHeader from "./TopHeader";
 import SideNav from "./SideNavigation";
 import "./css/DashboardLayout.css";
 
 const DashboardLayout = () => {
+  const [username, setUsername] = useState("");
+
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    setUsername(storedUsername || "User");
+  }, []);
+
   return (
     <div className="layout-container">
 
-      <TopHeader />
+      <TopHeader username={username} />
 
       <div className="main-section">
 
