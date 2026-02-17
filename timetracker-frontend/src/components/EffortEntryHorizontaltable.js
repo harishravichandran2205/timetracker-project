@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { PiNotePencilFill } from "react-icons/pi";
 
 
@@ -12,10 +12,36 @@ const HorizontalEffortTable = ({
   handleChange,
   handleDeleteRow,
   handleAddRow,
+  handleCopyRow,
   canDeleteRows,
   onEditDescription,
   showValidation,
+  duplicateRowIndexes = [],
 }) => {
+  const [actionPopup, setActionPopup] = useState({
+    open: false,
+    rowIndex: null,
+  });
+
+  const openActionPopup = (rowIndex) => {
+    setActionPopup({ open: true, rowIndex });
+  };
+
+  const closeActionPopup = () => {
+    setActionPopup({ open: false, rowIndex: null });
+  };
+
+  const onAddNewRow = () => {
+    if (actionPopup.rowIndex == null) return;
+    handleAddRow(actionPopup.rowIndex);
+    closeActionPopup();
+  };
+
+  const onCopyExistingRow = () => {
+    if (actionPopup.rowIndex == null) return;
+    handleCopyRow(actionPopup.rowIndex);
+    closeActionPopup();
+  };
   /** 🟩 Check if row is filled (so new empty row won't highlight) */
   const isRowUsed = (row) => {
     const hasHours = Object.values(row.hoursByDate || {}).some(
@@ -60,8 +86,9 @@ const HorizontalEffortTable = ({
               (v) => v && v.toString().trim() !== ""
             );
             const needs = (cond) => (showValidation && rowUsed && cond ? "field-invalid" : "");
+            const isDuplicateRow = duplicateRowIndexes.includes(rowIndex);
             return (
-            <tr key={rowIndex}>
+            <tr key={rowIndex} className={isDuplicateRow ? "duplicate-row" : ""}>
               <td>
                 <select
                   value={row.client}
@@ -120,10 +147,7 @@ const HorizontalEffortTable = ({
                   <button
                     type="button"
                     className={
-                      "task-desc-icon-btn " +
-                      (showValidation && isRowUsed(row) && (!row.description || !row.description.trim())
-                        ? "desc-error"
-                        : "")
+                      "task-desc-icon-btn "
                     }
                     title="Edit task description"
                     onClick={() => onEditDescription(rowIndex)}
@@ -204,7 +228,7 @@ const HorizontalEffortTable = ({
                     <button
                       className="plus-btn"
                       type="button"
-                      onClick={() => handleAddRow(rowIndex)}
+                      onClick={() => openActionPopup(rowIndex)}
                     >
                       +
                     </button>
@@ -226,6 +250,24 @@ const HorizontalEffortTable = ({
           )})}
         </tbody>
       </table>
+      {actionPopup.open && (
+        <div className="row-action-modal-backdrop" onClick={closeActionPopup}>
+          <div className="row-action-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Select Action</h3>
+            <div className="row-action-modal-actions">
+              <button type="button" className="row-action-btn row-action-btn-add" onClick={onAddNewRow}>
+                Add a new row
+              </button>
+              <button type="button" className="row-action-btn row-action-btn-copy" onClick={onCopyExistingRow}>
+                Copy row
+              </button>
+              <button type="button" className="row-action-btn row-action-btn-cancel" onClick={closeActionPopup}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

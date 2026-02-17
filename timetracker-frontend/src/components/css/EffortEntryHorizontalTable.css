@@ -72,6 +72,20 @@
   background-color: #e8f0ff;
 }
 
+.horizontal-effort-table tr.duplicate-row td {
+  background-color: #fff1f1 !important;
+  border-top: 2px solid #ff4d4f;
+  border-bottom: 2px solid #ff4d4f;
+}
+
+.horizontal-effort-table tr.duplicate-row td:first-child {
+  border-left: 2px solid #ff4d4f;
+}
+
+.horizontal-effort-table tr.duplicate-row td:last-child {
+  border-right: 2px solid #ff4d4f;
+}
+
 .horizontal-effort-table .field-invalid {
   background-color: #fff1f1;
   border: 2px solid #ff4d4f;
@@ -302,5 +316,71 @@
 }
 .task-desc-icon-btn.desc-error:hover {
   background: #ffb3b3 !important;
+}
+
+.row-action-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.row-action-modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 320px;
+  max-width: 90vw;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.row-action-modal h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.row-action-modal-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.row-action-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.row-action-btn-add {
+  background: #004aad;
+}
+
+.row-action-btn-add:hover {
+  background: #003b8a;
+}
+
+.row-action-btn-copy {
+  background: #0a66c2;
+}
+
+.row-action-btn-copy:hover {
+  background: #0857a3;
+}
+
+.row-action-btn-cancel {
+  background: #dc3545;
+}
+
+.row-action-btn-cancel:hover {
+  background: #c82333;
 }
 

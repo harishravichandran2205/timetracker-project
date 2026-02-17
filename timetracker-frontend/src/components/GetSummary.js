@@ -30,6 +30,42 @@ const GetSummary = () => {
     return `${dd}-${mm}-${yyyy}`;
   };
 
+  const sanitizeFilePart = (value) =>
+    (value || "")
+      .toString()
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ");
+
+  const getEmailPrefix = (emailsInput) => {
+    const list = Array.isArray(emailsInput)
+      ? emailsInput
+      : String(emailsInput || "").split(",");
+    return list
+      .map((e) => e.trim())
+      .filter(Boolean)
+      .map((email) => (email.includes("@") ? email.split("@")[0] : email))
+      .join("_");
+  };
+
+  const buildExportBaseName = () => {
+    const datePart = new Date().toISOString().slice(0, 10);
+    const clientPart = sanitizeFilePart(client);
+    const emailPart = sanitizeFilePart(getEmailPrefix(emails));
+
+    if (searchBy === "client" && clientPart) {
+      return `${clientPart}_Effort summary_${datePart}`;
+    }
+    if (searchBy === "email" && emailPart) {
+      return `${emailPart}_Effort summary_${datePart}`;
+    }
+    if (searchBy === "both") {
+      const prefix = [clientPart, emailPart].filter(Boolean).join("_");
+      if (prefix) return `${prefix}_Effort summary_${datePart}`;
+    }
+    return `Effort summary_${datePart}`;
+  };
+
 
 
   const downloadExcel = async () => {
@@ -106,7 +142,7 @@ const GetSummary = () => {
       pageBreak: "auto"
     });
 
-    doc.save(`Effort_Summary_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`${buildExportBaseName()}.pdf`);
   };
 
   const downloadPDF = async () => {
@@ -203,7 +239,7 @@ const GetSummary = () => {
 
     XLSX.writeFile(
       workbook,
-      `Effort_Summary_${new Date().toISOString().slice(0,10)}.xlsx`
+      `${buildExportBaseName()}.xlsx`
     );
   };
   const handleSearch = async () => {

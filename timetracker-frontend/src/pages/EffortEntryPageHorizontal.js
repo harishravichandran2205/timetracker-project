@@ -4,6 +4,7 @@ import axios from "axios";
 import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import HorizontalEffortTable from "../components/EffortEntryHorizontaltable.js";
+import DailyTotalHoursTable from "../components/DailyTotalHoursTable.js";
 import UnsavedChangesModal from "../components/UnsavedChangesModel";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/EffortEntryPageHorizontal.css";
@@ -27,6 +28,7 @@ const EffortEntryPageHorizontal = () => {
   const [pendingNavPath, setPendingNavPath] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showBottomSave, setShowBottomSave] = useState(false);
+  const [duplicateRowIndexes, setDuplicateRowIndexes] = useState([]);
   const tableWrapperRef = useRef(null);
   const [savedRowsSnapshot, setSavedRowsSnapshot] = useState([]);
 
@@ -367,6 +369,7 @@ const EffortEntryPageHorizontal = () => {
 
     setRows(newRows);
     setIsDirty(true);
+    setDuplicateRowIndexes([]);
 
     if (field === "client" && value) {
       fetchTaskTypesForRow(rowIndex, value);
@@ -392,6 +395,7 @@ const EffortEntryPageHorizontal = () => {
 
     // ✅ Allow delete for newly added rows (rowId == null)
     setRows((prev) => prev.filter((_, i) => i !== index));
+    setDuplicateRowIndexes([]);
   };
 
 
@@ -411,6 +415,41 @@ const EffortEntryPageHorizontal = () => {
     setRows((prev) => [...prev, createNewRow()]);
     setTaskTypeOptions((prev) => [...prev, []]);
     setProjectOptions((prev) => [...prev, []]);
+    setDuplicateRowIndexes([]);
+  };
+
+  const handleCopyRow = (sourceIndex) => {
+    const sourceRow = rows[sourceIndex];
+    if (!sourceRow) return;
+
+    const copiedRow = {
+      ...sourceRow,
+      rowId: null,
+      hoursByDate: { ...(sourceRow.hoursByDate || {}) },
+    };
+
+    setRows((prev) => {
+      const next = [...prev];
+      next.splice(sourceIndex + 1, 0, copiedRow);
+      return next;
+    });
+
+    setTaskTypeOptions((prev) => {
+      const safePrev = Array.isArray(prev) ? [...prev] : [];
+      const sourceOptions = Array.isArray(safePrev[sourceIndex]) ? [...safePrev[sourceIndex]] : [];
+      safePrev.splice(sourceIndex + 1, 0, sourceOptions);
+      return safePrev;
+    });
+
+    setProjectOptions((prev) => {
+      const safePrev = Array.isArray(prev) ? [...prev] : [];
+      const sourceOptions = Array.isArray(safePrev[sourceIndex]) ? [...safePrev[sourceIndex]] : [];
+      safePrev.splice(sourceIndex + 1, 0, sourceOptions);
+      return safePrev;
+    });
+
+    setIsDirty(true);
+    setDuplicateRowIndexes([]);
   };
 
 
@@ -490,6 +529,55 @@ const EffortEntryPageHorizontal = () => {
      return;
    }
    setShowValidation(false);
+
+   const buildDuplicateKey = (r) => {
+     const hoursPart = Object.entries(r.hoursByDate || {})
+       .filter(([, v]) => v !== null && v !== undefined && v.toString().trim() !== "")
+       .map(([k, v]) => [normalizeDateKey(k), Number.parseFloat(v)])
+       .filter(([, v]) => Number.isFinite(v))
+       .sort((a, b) => a[0].localeCompare(b[0]))
+       .map(([k, v]) => `${k}:${v}`)
+       .join("|");
+
+     return [
+       (r.client || "").trim().toUpperCase(),
+       (r.project || "").trim(),
+       (r.ticket || "").trim(),
+       (r.ticketDescription || "").trim(),
+       (r.category || "").trim(),
+       (r.billable || "").trim(),
+       (r.description || "").trim(),
+       hoursPart,
+     ].join("~");
+   };
+
+   const seen = new Map();
+   const duplicateIndexes = [];
+
+   rowsToSave.forEach((r, idx) => {
+     const key = buildDuplicateKey(r);
+     if (seen.has(key)) {
+       duplicateIndexes.push(idx);
+     } else {
+       seen.set(key, idx);
+     }
+   });
+
+   if (duplicateIndexes.length > 0) {
+     const rowRefs = new Set(rowsToSave);
+     const originalIndexes = rows
+       .map((r, i) => ({ r, i }))
+       .filter(({ r }) => rowRefs.has(r))
+       .map(({ i }) => i);
+
+     const highlighted = duplicateIndexes
+       .map((i) => originalIndexes[i])
+       .filter((i) => i !== undefined);
+
+     setDuplicateRowIndexes(highlighted);
+     showPopup("Duplicate row detected. Please modify copied row before saving.", "error");
+     return;
+   }
 
    if (!hasUnsavedChanges()) {
      showPopup("Task(s) already saved", "error");
@@ -637,6 +725,7 @@ const EffortEntryPageHorizontal = () => {
      await fetchEffortEntries(false);
      console.log("Payload sent to backend:", payload);
      setIsDirty(false);
+     setDuplicateRowIndexes([]);
    } catch (error) {
      console.error("Save failed:", error);
      const errMsg =
@@ -861,11 +950,18 @@ const handleDescriptionCancel = () => {
                   handleChange={handleChange}
                   handleDeleteRow={handleDeleteRow}
                   handleAddRow={handleAddRow}
+                  handleCopyRow={handleCopyRow}
                   canDeleteRows={canDeleteRows}
                   onEditDescription={handleOpenDescription}
                   showValidation={showValidation}
+                  duplicateRowIndexes={duplicateRowIndexes}
                 />
               </div>
+
+              <DailyTotalHoursTable
+                rows={rows}
+                dateColumns={getDateColumns()}
+              />
 
               {showBottomSave && (
                 <div className="bottom-save-btn">
@@ -917,4 +1013,3 @@ const handleDescriptionCancel = () => {
 };
 
 export default EffortEntryPageHorizontal;
-
