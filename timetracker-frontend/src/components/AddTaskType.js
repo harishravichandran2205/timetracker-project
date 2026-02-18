@@ -78,12 +78,24 @@ const AddTaskType = () => {
     setError("");
     setMessage("");
 
-    if (!clientCode) return setError("Client Code is required"), false;
-    if (action === "add" && !taskType) return setError("Task Type is required"), false;
+    if (!clientCode) {
+      setError("Client Code is required");
+      return false;
+    }
+    if (action === "add" && !taskType) {
+      setError("Task Type is required");
+      return false;
+    }
     if ((action === "modify" || action === "delete") && !taskType)
-      return setError("Please select a Task Type"), false;
+      {
+        setError("Please select a Task Type");
+        return false;
+      }
     if (action === "modify" && !newTaskType)
-      return setError("New Task Type is required"), false;
+      {
+        setError("New Task Type is required");
+        return false;
+      }
 
     return true;
   };

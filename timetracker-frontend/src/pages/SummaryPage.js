@@ -38,6 +38,30 @@ const SummaryPage = () => {
   }, []);
 
   // ===== Fetch clients & categories =====
+  useEffect(() => {
+    const fetchClientOptions = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const clientsRes = await axios.get(
+          `${API_BASE_URL}/api/admin-panel/client-codes`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const clients = Array.isArray(clientsRes?.data?.data)
+          ? clientsRes.data.data
+          : Array.isArray(clientsRes?.data)
+          ? clientsRes.data
+          : [];
+
+        setClientOptions(clients);
+      } catch (err) {
+        console.error("Failed to fetch client options", err);
+        setClientOptions([]);
+      }
+    };
+
+    fetchClientOptions();
+  }, []);
 
 
   // ===== Popup messages =====
@@ -285,6 +309,7 @@ const handleUnSave = () => {
                 <thead>
                   <tr>
                     <th>Client Name</th>
+                    <th>Project</th>
                     <th>Ticket Number</th>
                     <th>Ticket Description</th>
                     <th>Billable Hours</th>
@@ -296,6 +321,7 @@ const handleUnSave = () => {
                   {results.map((row, idx) => (
                     <tr key={idx}>
                       <td>{row.client}</td>
+                      <td>{row.project}</td>
                       <td>{row.ticket}</td>
                       <td>{row.ticketDescription}</td>
                       <td>{row.billableHours}</td>

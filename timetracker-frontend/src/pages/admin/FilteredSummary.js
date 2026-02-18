@@ -30,6 +30,42 @@ const FilteredSummary = () => {
       return `${dd}-${mm}-${yyyy}`;
     };
 
+  const sanitizeFilePart = (value) =>
+    (value || "")
+      .toString()
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ");
+
+  const getEmailPrefix = (emailsInput) => {
+    const list = Array.isArray(emailsInput)
+      ? emailsInput
+      : String(emailsInput || "").split(",");
+    return list
+      .map((e) => e.trim())
+      .filter(Boolean)
+      .map((email) => (email.includes("@") ? email.split("@")[0] : email))
+      .join("_");
+  };
+
+  const buildExportBaseName = () => {
+    const datePart = new Date().toISOString().slice(0, 10);
+    const clientPart = sanitizeFilePart(client);
+    const emailPart = sanitizeFilePart(getEmailPrefix(emails));
+
+    if (searchBy === "client" && clientPart) {
+      return `${clientPart}_Effort summary_${datePart}`;
+    }
+    if (searchBy === "email" && emailPart) {
+      return `${emailPart}_Effort summary_${datePart}`;
+    }
+    if (searchBy === "both") {
+      const prefix = [clientPart, emailPart].filter(Boolean).join("_");
+      if (prefix) return `${prefix}_Effort summary_${datePart}`;
+    }
+    return `Effort summary_${datePart}`;
+  };
+
 
   const downloadExcel = async () => {
     try {
@@ -63,6 +99,7 @@ const FilteredSummary = () => {
   const generateExcel = (data) => {
       const excelData = data.map(row => ({
         "Client Name": row.client,
+        "Project": row.project,
         "Ticket Number": row.ticket,
         "Ticket Description": row.ticketDescription,
         "Billable Hours": row.billableHours ?? 0,
@@ -80,13 +117,13 @@ const FilteredSummary = () => {
       alignment: { horizontal: "center", vertical: "center" }
     };
 
-    ["A1","B1","C1","D1","E1","F1"].forEach(cell => {
+    ["A1","B1","C1","D1","E1","F1","G1"].forEach(cell => {
       if (worksheet[cell]) worksheet[cell].s = headerStyle;
     });
 
     // ===== Wrap text for Task Description =====
     excelData.forEach((_, i) => {
-      const cell = `F${i + 2}`;
+      const cell = `G${i + 2}`;
       if (worksheet[cell]) {
         worksheet[cell].s = {
           alignment: { wrapText: true, vertical: "top" }
@@ -98,6 +135,7 @@ const FilteredSummary = () => {
     worksheet["!cols"] = [
       { wch: 18 },
       { wch: 18 },
+      { wch: 20 },
       { wch: 30 },
       { wch: 16 },
       { wch: 20 },
@@ -109,7 +147,7 @@ const FilteredSummary = () => {
 
     XLSX.writeFile(
       workbook,
-      `Effort_Summary_${new Date().toISOString().slice(0,10)}.xlsx`
+      `${buildExportBaseName()}.xlsx`
     );
   };
 
@@ -121,6 +159,7 @@ const FilteredSummary = () => {
 
       const tableColumn = [
         "Client Name",
+        "Project",
         "Ticket Number",
         "Ticket Description",
         "Billable Hours",
@@ -130,6 +169,7 @@ const FilteredSummary = () => {
 
       const tableRows = data.map(row => [
         row.client,
+        row.project,
         row.ticket,
         row.ticketDescription,
         row.billableHours ?? 0,
@@ -152,12 +192,12 @@ const FilteredSummary = () => {
           fillColor: [41, 128, 185]
         },
         columnStyles: {
-          5: { cellWidth: 80 }
+          6: { cellWidth: 80 }
         },
         pageBreak: "auto"
       });
 
-      doc.save(`Effort_Summary_${new Date().toISOString().slice(0, 10)}.pdf`);
+      doc.save(`${buildExportBaseName()}.pdf`);
     };
 
     const downloadPDF = async () => {
@@ -222,6 +262,7 @@ const FilteredSummary = () => {
         <thead>
           <tr>
             <th>Client Name</th>
+            <th>Project</th>
             <th>Ticket Number</th>
             <th>Ticket Description</th>
             <th>Billable Hours</th>
@@ -233,6 +274,7 @@ const FilteredSummary = () => {
           {results.map((row, idx) => (
             <tr key={idx}>
               <td>{row.client}</td>
+              <td>{row.project}</td>
               <td>{row.ticket}</td>
               <td>{row.ticketDescription}</td>
               <td>{row.billableHours}</td>

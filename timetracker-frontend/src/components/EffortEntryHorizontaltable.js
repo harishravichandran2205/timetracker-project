@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { PiNotePencilFill } from "react-icons/pi";
 
 
@@ -8,13 +8,53 @@ const HorizontalEffortTable = ({
   categories = [], // kept as-is
   dateColumns = [],
   taskTypeOptions = [], // SAFE DEFAULT
+  projectOptions = [],
   handleChange,
   handleDeleteRow,
   handleAddRow,
+  handleCopyRow,
   canDeleteRows,
   onEditDescription,
   showValidation,
+  duplicateRowIndexes = [],
 }) => {
+  const renderDateHeader = (date) => {
+    const match = /^(\d+)\s+([A-Za-z]{3})\s+\(([^)]+)\)$/.exec(date);
+    if (!match) return date;
+
+    const [, day, month, weekDay] = match;
+    return (
+      <span className="date-header-wrap">
+        <span>{`${day} ${month}`}</span>
+        <span>{`(${weekDay})`}</span>
+      </span>
+    );
+  };
+
+  const [actionPopup, setActionPopup] = useState({
+    open: false,
+    rowIndex: null,
+  });
+
+  const openActionPopup = (rowIndex) => {
+    setActionPopup({ open: true, rowIndex });
+  };
+
+  const closeActionPopup = () => {
+    setActionPopup({ open: false, rowIndex: null });
+  };
+
+  const onAddNewRow = () => {
+    if (actionPopup.rowIndex == null) return;
+    handleAddRow(actionPopup.rowIndex);
+    closeActionPopup();
+  };
+
+  const onCopyExistingRow = () => {
+    if (actionPopup.rowIndex == null) return;
+    handleCopyRow(actionPopup.rowIndex);
+    closeActionPopup();
+  };
   /** 🟩 Check if row is filled (so new empty row won't highlight) */
   const isRowUsed = (row) => {
     const hasHours = Object.values(row.hoursByDate || {}).some(
@@ -23,6 +63,7 @@ const HorizontalEffortTable = ({
 
     const hasMainFields = [
       row.client,
+      row.project,
       row.ticket,
       row.ticketDescription,
       row.category,
@@ -32,19 +73,32 @@ const HorizontalEffortTable = ({
     return hasHours || hasMainFields;
   };
 
+  const getTotalForDate = (date) =>
+    rows.reduce((sum, row) => {
+      const raw = row?.hoursByDate?.[date];
+      const value = Number.parseFloat(raw);
+      return Number.isFinite(value) ? sum + value : sum;
+    }, 0);
+
+  const formatTotal = (value) => {
+    if (!Number.isFinite(value)) return "0";
+    return Number.isInteger(value) ? String(value) : value.toFixed(1);
+  };
+
   return (
     <div className="horizontal-effort-table-wrapper">
       <table className="horizontal-effort-table">
         <thead>
           <tr>
             <th>Client</th>
+            <th>Project</th>
             <th>Ticket</th>
             <th>Ticket Description</th>
             <th>Category</th>
             <th>Billable</th>
             {dateColumns.map((date) => (
               <th key={date} className="date-col">
-                {date.split("-")[0]}
+                {renderDateHeader(date)}
               </th>
             ))}
             <th>Action</th>
@@ -57,8 +111,9 @@ const HorizontalEffortTable = ({
               (v) => v && v.toString().trim() !== ""
             );
             const needs = (cond) => (showValidation && rowUsed && cond ? "field-invalid" : "");
+            const isDuplicateRow = duplicateRowIndexes.includes(rowIndex);
             return (
-            <tr key={rowIndex}>
+            <tr key={rowIndex} className={isDuplicateRow ? "duplicate-row" : ""}>
               <td>
                 <select
                   value={row.client}
@@ -73,6 +128,27 @@ const HorizontalEffortTable = ({
 
                   {clients.map((c) => (
                     <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </td>
+              <td>
+                <select
+                  value={row.project ?? ""}
+                  className={needs(!row.project)}
+                  onChange={(e) => handleChange(rowIndex, "project", e.target.value)}
+                  disabled={!row.client}
+                >
+                  <option value="">
+                    {!row.client
+                      ? "Select Client First"
+                      : (projectOptions[rowIndex]?.length ?? 0) === 0
+                      ? "No Projects Found"
+                      : "Select Project"}
+                  </option>
+                  {(projectOptions[rowIndex] || []).map((p, i) => (
+                    <option key={`${rowIndex}-project-${i}`} value={p}>
+                      {p}
+                    </option>
                   ))}
                 </select>
               </td>
@@ -96,10 +172,7 @@ const HorizontalEffortTable = ({
                   <button
                     type="button"
                     className={
-                      "task-desc-icon-btn " +
-                      (showValidation && isRowUsed(row) && (!row.description || !row.description.trim())
-                        ? "desc-error"
-                        : "")
+                      "task-desc-icon-btn "
                     }
                     title="Edit task description"
                     onClick={() => onEditDescription(rowIndex)}
@@ -140,17 +213,14 @@ const HorizontalEffortTable = ({
 
                 {/* BILLABLE */}
                 <td>
-                  <select
-                    value={row.billable ?? ""}
+                  <input
+                    type="checkbox"
                     className={needs(!row.billable)}
+                    checked={row.billable === "Yes"}
                     onChange={(e) =>
-                      handleChange(rowIndex, "billable", e.target.value)
+                      handleChange(rowIndex, "billable", e.target.checked ? "Yes" : "No")
                     }
-                  >
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
+                  />
                 </td>
 
                 {/* HOURS */}
@@ -180,7 +250,7 @@ const HorizontalEffortTable = ({
                     <button
                       className="plus-btn"
                       type="button"
-                      onClick={() => handleAddRow(rowIndex)}
+                      onClick={() => openActionPopup(rowIndex)}
                     >
                       +
                     </button>
@@ -200,8 +270,35 @@ const HorizontalEffortTable = ({
 
             </tr>
           )})}
+          <tr className="total-hours-row">
+            <td colSpan={6}>Total Hours</td>
+            {dateColumns.map((date) => (
+              <td key={`total-${date}`} className="date-col">
+                {formatTotal(getTotalForDate(date))}
+              </td>
+            ))}
+            <td></td>
+          </tr>
         </tbody>
       </table>
+      {actionPopup.open && (
+        <div className="row-action-modal-backdrop" onClick={closeActionPopup}>
+          <div className="row-action-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Select Action</h3>
+            <div className="row-action-modal-actions">
+              <button type="button" className="row-action-btn row-action-btn-add" onClick={onAddNewRow}>
+                Add a new row
+              </button>
+              <button type="button" className="row-action-btn row-action-btn-copy" onClick={onCopyExistingRow}>
+                Copy row
+              </button>
+              <button type="button" className="row-action-btn row-action-btn-cancel" onClick={closeActionPopup}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

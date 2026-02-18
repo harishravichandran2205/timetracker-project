@@ -34,6 +34,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
   SELECT
       row_id AS rowId,
       client,
+      project,
       ticket,
       ticket_description AS ticketDescription,
       category,
@@ -44,6 +45,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
       SELECT\s
           row_id,
           client,
+          project,
           ticket,
           ticket_description,
           category,
@@ -51,14 +53,14 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
           description,
           date,
           SUM(hours) AS totalHours   -- ✔ sums ONLY same day
-      FROM timetracker_db.tasks
+      FROM tasks
       WHERE user_id = :userId
         AND STR_TO_DATE(date, '%d-%m-%Y') BETWEEN :startDate AND :endDate
-      GROUP BY row_id,client, ticket, ticket_description, category, billable, description, date
+      GROUP BY row_id,client, project, ticket, ticket_description, category, billable, description, date
       -- ✔ grouping includes date → means adding only for same day
   ) merged
   GROUP BY\s
-      row_id,client, ticket, ticket_description, category, billable, description
+      row_id,client, project, ticket, ticket_description, category, billable, description
  \s""", nativeQuery = true)
   List<MergedEffortProjections> getMergedEffortsByDate(
           @Param("userId") Long userId,
@@ -69,7 +71,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpec
 
   @Query(value = """
 SELECT *
-FROM timetracker_db.tasks
+FROM tasks
 WHERE email = :email
   AND client = :client
   AND ticket = :ticket

@@ -68,6 +68,7 @@ public class TaskService {
                         .rowId(p.getRowId())
                         .userId(userId)
                         .client(p.getClient())
+                        .project(p.getProject())
                         .ticket(p.getTicket())
                         .ticketDescription(p.getTicketDescription())
                         .category(p.getCategory())
