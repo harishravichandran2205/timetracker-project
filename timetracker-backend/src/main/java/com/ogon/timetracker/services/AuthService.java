@@ -7,12 +7,14 @@ import com.ogon.timetracker.dto.SignUpRequestDTO;
 import com.ogon.timetracker.dto.SignUpResponseDTO;
 import com.ogon.timetracker.entities.User;
 import com.ogon.timetracker.enums.Role;
+import com.ogon.timetracker.exceptions.InvalidEmalDomainException;
 import com.ogon.timetracker.exceptions.ResourceNotFoundException;
 import com.ogon.timetracker.exceptions.RuntimeConflictException;
 import com.ogon.timetracker.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -40,11 +42,16 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    @Value("${company.email.domain}")
+    private String companyDomain;
+
     @Transactional
     public SignUpResponseDTO registerNewUser(SignUpRequestDTO signUpRequestDTO) {
        User user = userRepository.findByEmail(signUpRequestDTO.getEmail()).orElse(null);
         if(user != null)
             throw new RuntimeConflictException("Cannot signup, User already exists with email "+signUpRequestDTO.getEmail());
+        //Validate Company email domain
+        validateCompanyEmail(signUpRequestDTO.getEmail());
 
         User mappedUser = modelMapper.map(signUpRequestDTO, User.class);
         mappedUser.setRoles(Set.of(Role.USER));
@@ -97,6 +104,17 @@ public class AuthService {
                 "with id: "+userId));
 
         return jwtService.generateAccessToken(user);
+    }
+
+    private void validateCompanyEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            throw new InvalidEmalDomainException("Invalid email");
+        }
+        String domain = email.substring(email.indexOf("@")).toLowerCase();
+
+        if (!domain.equalsIgnoreCase(companyDomain)) {
+            throw new InvalidEmalDomainException("Only company email allowed");
+        }
     }
 
 }

@@ -87,10 +87,14 @@ const RegisterPage = () => {
 
     } catch (error) {
       console.error('Registration failed:', error);
-
+      const backendMessage = error.response?.data?.data?.message;
       if (error.response?.status === 409) {
         setMessage({ text: 'User already exists with this email.', type: 'error' });
-      } else {
+      }  else if (error.response?.status === 400) {
+            setMessage({
+              text: backendMessage || 'Invalid request.',
+              type: 'error'});
+       } else {
         setMessage({ text: 'Failed to create user. Please try again.', type: 'error' });
       }
     }
