@@ -1,5 +1,6 @@
 package com.ogon.timetracker.advices;
 
+import com.ogon.timetracker.exceptions.InvalidEmalDomainException;
 import com.ogon.timetracker.exceptions.ResourceNotFoundException;
 import com.ogon.timetracker.exceptions.RuntimeConflictException;
 import io.jsonwebtoken.JwtException;
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.naming.AuthenticationException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -92,5 +95,16 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ApiResponse<?>> buildErrorResponseEntity(ApiError apiError) {
         return new ResponseEntity<>(new ApiResponse<>(apiError), apiError.getStatus());
+    }
+
+    @ExceptionHandler(InvalidEmalDomainException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidDomain(InvalidEmalDomainException ex) {
+
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(error);
     }
 }
