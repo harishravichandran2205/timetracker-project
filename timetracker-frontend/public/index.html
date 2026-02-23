@@ -28,38 +28,23 @@
   </head>
   <style>
       .logo-loader {
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+            width: 50px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background:
+            radial-gradient(farthest-side,#ffa516 94%,#0000) top/8px 8px no-repeat,
+            conic-gradient(#0000 30%,#ffa516);
+            -webkit-mask: radial-gradient(farthest-side,#0000 calc(100% - 8px),#000 0);
+            animation: l13 1s infinite linear;
       }
-
-      .logo-loader img {
-        width: 90px;
-        animation: pulseRotate 1.6s ease-in-out infinite;
-      }
-
-      @keyframes pulseRotate {
-        0% {
-          transform: scale(0.95) rotate(0deg);
-          opacity: 0.7;
-        }
-        50% {
-          transform: scale(1.05) rotate(180deg);
-          opacity: 1;
-        }
-        100% {
-          transform: scale(0.95) rotate(360deg);
-          opacity: 0.7;
-        }
+      @keyframes l13{
+            100%{transform: rotate(1turn)}
       }
   </style>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root">
-        <div class="logo-loader">
-            <img src="%PUBLIC_URL%/logo-o.png" alt="App Logo" />
-        </div>
+        <div class="logo-loader"></div>
     </div>
     <!--
       This HTML file is a template.
