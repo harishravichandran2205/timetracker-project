@@ -12,6 +12,7 @@ import EffortEntryPageHorizon from "./pages/EffortEntryPageHorizontal.js";// Lay
 import AdminPage from "./pages/AdminPage.js";
 import FilteredSummary from "./pages/admin/FilteredSummary";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import AutoLogout from "./components/AutoLogout.js";
 
 
 
@@ -29,7 +30,7 @@ function AppRoutes() {
 
       {/* Protected pages wrapped in DashboardLayout */}
       {isAuthenticated ? (
-        <Route path="/" element={<DashboardLayout />}>
+        <Route path="/" element={<AutoLogout><DashboardLayout /></AutoLogout>}>
           <Route index element={<DashboardPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="effort-entry" element={<EffortEntryPage />} />

@@ -26,9 +26,41 @@
     -->
     <title>Time Tracker App</title>
   </head>
+  <style>
+      .logo-loader {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .logo-loader img {
+        width: 90px;
+        animation: pulseRotate 1.6s ease-in-out infinite;
+      }
+
+      @keyframes pulseRotate {
+        0% {
+          transform: scale(0.95) rotate(0deg);
+          opacity: 0.7;
+        }
+        50% {
+          transform: scale(1.05) rotate(180deg);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(0.95) rotate(360deg);
+          opacity: 0.7;
+        }
+      }
+  </style>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+        <div class="logo-loader">
+            <img src="%PUBLIC_URL%/logo-o.png" alt="App Logo" />
+        </div>
+    </div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

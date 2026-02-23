@@ -12,6 +12,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [warningMessage, setWarningMessage] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
@@ -19,13 +20,24 @@ const LoginPage = () => {
   // Get success message from registration
   useEffect(() => {
     const message = location.state?.successMessage || '';
+    const sessionMsg =
+      location.state?.warningMessage ||
+      sessionStorage.getItem("warningMessage") ||
+      "";
     setSuccessMessage(message);
+    if (sessionMsg) {
+        setWarningMessage(sessionMsg);
+        sessionStorage.removeItem("warningMessage");
+      }
 
-    if (message) {
-      const timer = setTimeout(() => setSuccessMessage(''), 5000); // hide after 5 seconds
+    if (message || sessionMsg) {
+      const timer = setTimeout(() => {
+            setSuccessMessage('');
+            setWarningMessage('');
+          }, 5000); // hide after 5 seconds
       return () => clearTimeout(timer);
     }
-  }, [location.state?.successMessage]);
+  }, [location.state]);
 
   const { login } = useAuth();
   const handleLogin = async (e) => {
