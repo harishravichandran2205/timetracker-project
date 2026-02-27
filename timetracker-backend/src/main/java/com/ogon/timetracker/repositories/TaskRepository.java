@@ -17,6 +17,26 @@ import java.util.Optional;
 @Repository
 public interface TaskRepository extends JpaRepository<TaskEntity, Long>, JpaSpecificationExecutor<TaskEntity> {
   TaskEntity findByTicket(String ticketNumber);
+  @Query(value = """
+      SELECT COUNT(*)
+      FROM tasks
+      WHERE UPPER(TRIM(ticket)) = UPPER(TRIM(:ticket))
+      """, nativeQuery = true)
+  long countByTicket(@Param("ticket") String ticket);
+
+  @Query(value = """
+      SELECT ticket_description
+      FROM tasks
+      WHERE UPPER(TRIM(ticket)) = UPPER(TRIM(:ticket))
+        AND ticket_description IS NOT NULL
+        AND TRIM(ticket_description) <> ''
+      ORDER BY id DESC
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<String> findLatestTicketDescriptionByTicket(@Param("ticket") String ticket);
+
+  @Query("SELECT t FROM TaskEntity t WHERE UPPER(TRIM(t.ticket)) = UPPER(TRIM(:ticket))")
+  List<TaskEntity> findAllByTicket(@Param("ticket") String ticket);
 
 
 //  @Query("SELECT t FROM TaskEntity t WHERE t.email = :email AND FUNCTION('STR_TO_DATE', t.date, '%d-%m-%Y') BETWEEN :start AND :end")

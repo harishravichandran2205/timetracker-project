@@ -36,6 +36,8 @@ public class TaskEntity {
     private String billable;
     private Double hours;
     private String date;
+    @Column(name = "work_date")
+    private LocalDate workDate;
     private Long userId;
 
 

@@ -13,24 +13,14 @@ import com.ogon.timetracker.exceptions.RuntimeConflictException;
 import com.ogon.timetracker.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
-
 import org.modelmapper.ModelMapper;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +31,8 @@ public class AuthService {
     private final ModelMapper modelMapper;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final PasswordPolicyService passwordPolicyService;
+    private final PasswordHistoryService passwordHistoryService;
 
     @Value("${company.email.domain}")
     private String companyDomain;
@@ -52,11 +44,18 @@ public class AuthService {
             throw new RuntimeConflictException("Cannot signup, User already exists with email "+signUpRequestDTO.getEmail());
         //Validate Company email domain
         validateCompanyEmail(signUpRequestDTO.getEmail());
+        passwordPolicyService.validateForRegistration(
+                signUpRequestDTO.getPassword(),
+                signUpRequestDTO.getFirstName(),
+                signUpRequestDTO.getLastName(),
+                signUpRequestDTO.getEmail()
+        );
 
         User mappedUser = modelMapper.map(signUpRequestDTO, User.class);
         mappedUser.setRoles(Set.of(Role.USER));
         mappedUser.setPassword(passwordEncoder.encode(signUpRequestDTO.getPassword()));
         User savedUser = userRepository.save(mappedUser);
+        passwordHistoryService.recordPassword(savedUser, savedUser.getPassword());
 
 
         return modelMapper.map(savedUser, SignUpResponseDTO.class);
@@ -80,11 +79,6 @@ public class AuthService {
             String accessToken=jwtService.generateAccessToken(user);
             String refreshToken=jwtService.generateRefreshToken(user);
             String username = user.getFirstName() + " " + user.getLastName();
-            List<String> roleNames = user.getRoles().stream()
-                    .map(Role::name)
-                    .collect(Collectors.toList());
-
-
 
             return new LoginResponseDTO(accessToken, refreshToken, user.getRoles(), username);
         } else {
