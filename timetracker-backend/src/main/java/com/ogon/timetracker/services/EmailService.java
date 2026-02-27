@@ -16,7 +16,7 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(toEmail);
             message.setSubject("Your OTP for Time Tracker");
-            message.setText("Your OTP is: " + otp + "\nIt is valid for 10 minutes.");
+            message.setText("Your Password Change OTP is: " + otp + "\nIt is valid for 10 minutes.");
             mailSender.send(message);
             return true;
         } catch (Exception e) {
