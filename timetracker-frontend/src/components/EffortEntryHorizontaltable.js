@@ -67,7 +67,6 @@ const HorizontalEffortTable = ({
       row.ticket,
       row.ticketDescription,
       row.category,
-      row.billable,
     ].some((v) => v && v.toString().trim() !== "");
 
     return hasHours || hasMainFields;
@@ -93,7 +92,7 @@ const HorizontalEffortTable = ({
             <th>Client</th>
             <th>Project</th>
             <th>Ticket</th>
-            <th>Ticket Description</th>
+            <th>Desc</th>
             <th>Category</th>
             <th>Billable</th>
             {dateColumns.map((date) => (
@@ -162,18 +161,9 @@ const HorizontalEffortTable = ({
               </td>
               <td>
                 <div className="ticket-desc-cell">
-                  <input
-                    type="text"
-                    value={row.ticketDescription}
-                    className={needs(!row.ticketDescription || !row.ticketDescription.trim())}
-                    onChange={(e) => handleChange(rowIndex, "ticketDescription", e.target.value)}
-                  />
-
                   <button
                     type="button"
-                    className={
-                      "task-desc-icon-btn "
-                    }
+                    className={`task-desc-icon-btn ${needs(!row.ticketDescription || !row.ticketDescription.trim()) ? "desc-error" : ""}`}
                     title="Edit task description"
                     onClick={() => onEditDescription(rowIndex)}
                   >
@@ -215,7 +205,6 @@ const HorizontalEffortTable = ({
                 <td>
                   <input
                     type="checkbox"
-                    className={needs(!row.billable)}
                     checked={row.billable === "Yes"}
                     onChange={(e) =>
                       handleChange(rowIndex, "billable", e.target.checked ? "Yes" : "No")

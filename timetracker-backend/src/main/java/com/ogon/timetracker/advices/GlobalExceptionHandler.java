@@ -1,6 +1,7 @@
 package com.ogon.timetracker.advices;
 
 import com.ogon.timetracker.exceptions.InvalidEmalDomainException;
+import com.ogon.timetracker.exceptions.PasswordPolicyViolationException;
 import com.ogon.timetracker.exceptions.ResourceNotFoundException;
 import com.ogon.timetracker.exceptions.RuntimeConflictException;
 import io.jsonwebtoken.JwtException;
@@ -106,6 +107,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(error);
+    }
+
+    @ExceptionHandler(PasswordPolicyViolationException.class)
+    public ResponseEntity<ApiResponse<?>> handlePasswordPolicyViolation(PasswordPolicyViolationException ex) {
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(ex.getMessage())
+                .build();
+        return buildErrorResponseEntity(apiError);
     }
 
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)

@@ -28,6 +28,18 @@ public class TaskController {
     private final TaskRepository taskRepository;
     private final DateTimeFormatter dbFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private final DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private LocalDate parseWorkDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value, dbFormatter);
+        } catch (Exception ignored) {
+            return LocalDate.parse(value, inputFormatter);
+        }
+    }
+
     @PostMapping("/tasks")
     public ResponseEntity<Map<String, String>> saveTasks(@RequestBody List<TaskDTO> tasks) {
         if (tasks == null || tasks.isEmpty()) {
@@ -62,6 +74,7 @@ public class TaskController {
                         .billable(dto.getBillable())
                         .hours(dto.getHours())
                         .date(dto.getDate())
+                        .workDate(parseWorkDate(dto.getDate()))
                         .ticketDescription(dto.getTicketDescription())
                         .build();
 
@@ -146,9 +159,10 @@ public class TaskController {
                             double newHours = Double.parseDouble(newHoursObj.toString());
 
                             if (Double.compare(existing.getHours(), newHours) != 0) {
-                                existing.setHours(newHours);
-                                rowChanged = true;
-                                updateLogs.add("Updated hours | rowId=" + rowId + " date=" + date);
+                            existing.setHours(newHours);
+                            existing.setWorkDate(parseWorkDate(date));
+                            rowChanged = true;
+                            updateLogs.add("Updated hours | rowId=" + rowId + " date=" + date);
                             }
                         }
                         // Update static fields IF changed
@@ -163,6 +177,7 @@ public class TaskController {
                             existing.setUserId(user_Id);
                             existing.setFirstName(firstName);
                             existing.setLastName(lastName);
+                            existing.setWorkDate(parseWorkDate(date));
                             rowChanged = true;
                             updateLogs.add("Updated fields | rowId=" + rowId + " date=" + date);
                         }
@@ -198,6 +213,7 @@ public class TaskController {
                                     .billable(billable)
                                     .hours(hours)
                                     .date(date)
+                                    .workDate(parseWorkDate(date))
                                     .build();
 
                             toInsert.add(newRow);
@@ -237,6 +253,7 @@ public class TaskController {
                         .billable(billable)
                         .hours(hours)
                         .date(date)
+                        .workDate(parseWorkDate(date))
                         .build();
 
                 toInsert.add(entity);
@@ -298,6 +315,56 @@ public class TaskController {
         response.put("message","No Effort Entries Found");
 //        response.put("data", results);
        return  ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/tickets/description")
+    public ResponseEntity<Map<String, Object>> getTicketDescriptionByTicket(@RequestParam String ticket) {
+        if (ticket == null || ticket.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Ticket number is required"));
+        }
+
+        String normalizedTicket = ticket.trim();
+        boolean exists = taskRepository.countByTicket(normalizedTicket) > 0;
+        String ticketDescription = taskRepository
+                .findLatestTicketDescriptionByTicket(normalizedTicket)
+                .orElse("");
+
+        return ResponseEntity.ok(Map.of(
+                "ticket", normalizedTicket,
+                "exists", exists,
+                "ticketDescription", ticketDescription
+        ));
+    }
+
+    @PutMapping("/tickets/description")
+    public ResponseEntity<Map<String, Object>> updateTicketDescription(@RequestBody Map<String, String> payload) {
+        String ticket = payload.get("ticket");
+        String ticketDescription = payload.get("ticketDescription");
+
+        if (ticket == null || ticket.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Ticket number is required"));
+        }
+        if (ticketDescription == null || ticketDescription.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Ticket description is required"));
+        }
+
+        String normalizedTicket = ticket.trim();
+        String normalizedDescription = ticketDescription.trim();
+
+        List<TaskEntity> ticketRows = taskRepository.findAllByTicket(normalizedTicket);
+        if (ticketRows.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Ticket not found"));
+        }
+
+        ticketRows.forEach(row -> row.setTicketDescription(normalizedDescription));
+        taskRepository.saveAll(ticketRows);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Ticket description updated",
+                "ticket", normalizedTicket,
+                "updatedRows", ticketRows.size()
+        ));
     }
 
 
@@ -403,6 +470,7 @@ public class TaskController {
             task.setBillable(taskDTO.getBillable());
             task.setHours(taskDTO.getHours());
             task.setDate(taskDTO.getDate());
+            task.setWorkDate(parseWorkDate(taskDTO.getDate()));
 
             // Save updated task
             TaskEntity updatedTask = taskRepository.save(task);
