@@ -7,7 +7,7 @@ import com.ogon.timetracker.dto.SignUpRequestDTO;
 import com.ogon.timetracker.dto.SignUpResponseDTO;
 import com.ogon.timetracker.entities.User;
 import com.ogon.timetracker.enums.Role;
-import com.ogon.timetracker.exceptions.InvalidEmalDomainException;
+import com.ogon.timetracker.exceptions.InvalidEmailDomainException;
 import com.ogon.timetracker.exceptions.ResourceNotFoundException;
 import com.ogon.timetracker.exceptions.RuntimeConflictException;
 import com.ogon.timetracker.repositories.UserRepository;
@@ -108,12 +108,12 @@ public class AuthService {
 
     private void validateCompanyEmail(String email) {
         if (email == null || !email.contains("@")) {
-            throw new InvalidEmalDomainException("Invalid email");
+            throw new InvalidEmailDomainException("Invalid email");
         }
         String domain = email.substring(email.indexOf("@")).toLowerCase();
 
         if (!domain.equalsIgnoreCase(companyDomain)) {
-            throw new InvalidEmalDomainException("Only company email allowed");
+            throw new InvalidEmailDomainException("Only company email allowed");
         }
     }
 

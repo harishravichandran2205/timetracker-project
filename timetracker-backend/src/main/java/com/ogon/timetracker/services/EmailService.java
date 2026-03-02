@@ -1,5 +1,6 @@
 package com.ogon.timetracker.services;
 
+import com.ogon.timetracker.exceptions.InvalidEmailDomainException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -21,7 +22,7 @@ public class EmailService {
             return true;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            throw new InvalidEmailDomainException("Error in Sending OTP.Please Try Again Later");
         }
     }
 }
