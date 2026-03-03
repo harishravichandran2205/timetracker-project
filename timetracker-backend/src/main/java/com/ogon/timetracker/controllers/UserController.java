@@ -4,6 +4,8 @@ package com.ogon.timetracker.controllers;
 import com.ogon.timetracker.entities.User;
 import com.ogon.timetracker.repositories.UserRepository;
 import com.ogon.timetracker.services.EmailService;
+import com.ogon.timetracker.services.PasswordHistoryService;
+import com.ogon.timetracker.services.PasswordPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,8 @@ public class UserController {
     private Map<String, String> otpStore = new HashMap<>(); // store OTP temporarily
 
     private final PasswordEncoder passwordEncoder ;
+    private final PasswordPolicyService passwordPolicyService;
+    private final PasswordHistoryService passwordHistoryService;
 
 
     @GetMapping("/getuser/{email}")
@@ -89,9 +93,15 @@ public class UserController {
             if (optionalUser.isPresent()) {
                 User user = optionalUser.get();
                 if (user != null) {
+                    passwordPolicyService.validateForPasswordChange(newPassword, user);
+                    if (passwordHistoryService.matchesRecentPasswords(user, newPassword)) {
+                        response.put("success", false);
+                        response.put("message", "Password must not match any of your last 5 passwords.");
+                        return ResponseEntity.status(400).body(response);
+                    }
                     user.setPassword(passwordEncoder.encode(newPassword));
-                    // ideally, hash password before saving
                     userRepository.save(user);
+                    passwordHistoryService.recordPassword(user, user.getPassword());
                     otpStore.remove(email);
 
                     response.put("success", true);

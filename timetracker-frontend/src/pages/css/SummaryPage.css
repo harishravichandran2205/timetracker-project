@@ -52,6 +52,22 @@
   background-color: #0066ff;
 }
 
+.consolidated-download-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.summary-export-btn {
+  background-color: #1e88e5 !important;
+  color: #fff;
+}
+
+.summary-export-btn:hover {
+  background-color: #1565c0 !important;
+}
+
 /* ===== SUMMARY TABLE ===== */
 .summary-table {
   width: 100%;
@@ -197,6 +213,11 @@
 
   .date-range-container .btn {
     width: 100%;
+  }
+
+  .consolidated-download-actions {
+    width: 100%;
+    margin-left: 0;
   }
 
   .summary-table th,

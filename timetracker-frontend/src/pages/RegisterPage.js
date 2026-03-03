@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import './css/RegisterPage.css';
 import API_BASE_URL from "../config/BackendApiConfig";
 import { FaLock, FaLockOpen } from "react-icons/fa";
+import PasswordPolicyHint from "../components/PasswordPolicyHint";
+import { validatePasswordPolicy } from "../utils/passwordPolicy";
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
@@ -56,8 +58,9 @@ const RegisterPage = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setMessage({ text: 'Password must be at least 6 characters long.', type: 'error' });
+    const passwordValidationMessage = validatePasswordPolicy({ password, firstName, lastName, email });
+    if (passwordValidationMessage) {
+      setMessage({ text: passwordValidationMessage, type: 'error' });
       return;
     }
 
@@ -69,7 +72,7 @@ const RegisterPage = () => {
     try {
       console.log('Registering:', { firstName, lastName, email, password, roles: [role] });
 
-      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, {
+      await axios.post(`${API_BASE_URL}/api/auth/register`, {
         firstName,
         lastName,
         email,
@@ -87,7 +90,7 @@ const RegisterPage = () => {
 
     } catch (error) {
       console.error('Registration failed:', error);
-      const backendMessage = error.response?.data?.data?.message;
+      const backendMessage = error.response?.data?.error?.message || error.response?.data?.data?.message || error.response?.data?.message;
       if (error.response?.status === 409) {
         setMessage({ text: 'User already exists with this email.', type: 'error' });
       }  else if (error.response?.status === 400) {
@@ -178,6 +181,7 @@ const RegisterPage = () => {
            required
          />
         </div>
+        <PasswordPolicyHint />
 
         <div className="form-group">
           <label>Role:</label>

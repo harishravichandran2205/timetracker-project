@@ -8,6 +8,9 @@ import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import UnsavedChangesModal from "../components/UnsavedChangesModel";
 import "./css/SummaryPage.css";
+import * as XLSX from "xlsx-js-style";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const SummaryPage = () => {
   const navigate = useNavigate();
@@ -88,6 +91,26 @@ const showPopup = (msg, type = "success", persist = false) => {
     return dateStr;
   };
 
+  const sanitizeFilePart = (value) =>
+    (value || "")
+      .toString()
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ");
+
+  const getEmailPrefix = (email) => {
+    const safeEmail = (email || "").trim();
+    if (!safeEmail) return "user";
+    return safeEmail.includes("@") ? safeEmail.split("@")[0] : safeEmail;
+  };
+
+  const buildExportBaseName = () => {
+    const datePart = new Date().toISOString().slice(0, 10);
+    const email = localStorage.getItem("email") || "";
+    const emailPart = sanitizeFilePart(getEmailPrefix(email));
+    return `${emailPart}_Effort summary_${datePart}`;
+  };
+
   const today = new Date();
   const calendarMax = today.toISOString().split("T")[0];
   const calendarMin =
@@ -152,6 +175,7 @@ const showPopup = (msg, type = "success", persist = false) => {
   const fetchConsolidatedSummaryByDate = async () => {
     setActiveView("consolidated");
     setSummaryData([]);
+    setResults([]);
 
     if (!startDate || !endDate) {
       showPopup("Please select both start and end dates", "error");
@@ -189,6 +213,130 @@ const showPopup = (msg, type = "success", persist = false) => {
     } catch (err) {
       console.error(err);
       showPopup("Failed to fetch consolidated summary", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchConsolidatedForExport = async () => {
+    if (!startDate || !endDate) {
+      showPopup("Please select both start and end dates", "error");
+      return null;
+    }
+
+    const token = localStorage.getItem("token");
+    const email = (localStorage.getItem("email") || "").trim();
+
+    if (!email) {
+      showPopup("Logged in email not found", "error");
+      return null;
+    }
+
+    const payload = {
+      searchBy: "email",
+      emails: [email],
+      startDate: formatForBackend(startDate),
+      endDate: formatForBackend(endDate),
+      exportAll: true,
+    };
+
+    const res = await axios.post(
+      `${API_BASE_URL}/api/admin-panel/search`,
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    return Array.isArray(res?.data?.data?.data) ? res.data.data.data : [];
+  };
+
+  const generateExcel = (data) => {
+    const excelData = data.map((row) => ({
+      "Client Name": row.client,
+      Project: row.project,
+      "Ticket Number": row.ticket,
+      "Ticket Description": row.ticketDescription,
+      "Billable Hours": row.billableHours ?? 0,
+      "Non-Billable Hours": row.nonBillableHours ?? 0,
+      "Task Description": (row.descriptions || [])
+        .map((d, i) => `${i + 1}. ${d}`)
+        .join("\n"),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Summary");
+    XLSX.writeFile(workbook, `${buildExportBaseName()}.xlsx`);
+  };
+
+  const generatePDF = (data) => {
+    const doc = new jsPDF("landscape");
+    doc.setFontSize(14);
+    doc.text("Effort Summary Report", 14, 15);
+
+    const tableColumn = [
+      "Client Name",
+      "Project",
+      "Ticket Number",
+      "Ticket Description",
+      "Billable Hours",
+      "Non-Billable Hours",
+      "Task Description",
+    ];
+
+    const tableRows = data.map((row) => [
+      row.client,
+      row.project,
+      row.ticket,
+      row.ticketDescription,
+      row.billableHours ?? 0,
+      row.nonBillableHours ?? 0,
+      (row.descriptions || []).map((d, i) => `${i + 1}. ${d}`).join("\n"),
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+      styles: { fontSize: 8, cellPadding: 3, valign: "top" },
+      headStyles: { fillColor: [41, 128, 185] },
+      columnStyles: { 6: { cellWidth: 80 } },
+      pageBreak: "auto",
+    });
+
+    doc.save(`${buildExportBaseName()}.pdf`);
+  };
+
+  const downloadExcel = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchConsolidatedForExport();
+      if (!data || data.length === 0) {
+        showPopup("No effort records found for selected range", "error");
+        return;
+      }
+      generateExcel(data);
+      showPopup("Excel downloaded successfully", "success");
+    } catch (err) {
+      console.error(err);
+      showPopup("Failed to download Excel", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadPDF = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchConsolidatedForExport();
+      if (!data || data.length === 0) {
+        showPopup("No effort records found for selected range", "error");
+        return;
+      }
+      generatePDF(data);
+      showPopup("PDF downloaded successfully", "success");
+    } catch (err) {
+      console.error(err);
+      showPopup("Failed to download PDF", "error");
     } finally {
       setLoading(false);
     }
@@ -282,9 +430,26 @@ const handleUnSave = () => {
             <button className="btn" onClick={fetchSummaryByDate}>
               Show Summary
             </button>
-            <button className="btn" onClick={fetchConsolidatedSummaryByDate}>
+            <button
+              className="btn"
+              onClick={fetchConsolidatedSummaryByDate}
+            >
               Show Consolidated Summary
             </button>
+            {!loading &&
+              activeView === "consolidated" &&
+              startDate &&
+              endDate &&
+              results.length > 0 && (
+              <div className="consolidated-download-actions">
+                <button className="btn summary-export-btn" onClick={downloadExcel}>
+                  Download Excel
+                </button>
+                <button className="btn summary-export-btn" onClick={downloadPDF}>
+                  Download PDF
+                </button>
+              </div>
+            )}
           </div>
 
           {loading && <p>Loading summary...</p>}
@@ -303,7 +468,11 @@ const handleUnSave = () => {
             />
           )}
 
-          {!loading && activeView === "consolidated" && results.length > 0 && (
+          {!loading &&
+            activeView === "consolidated" &&
+            startDate &&
+            endDate &&
+            results.length > 0 && (
             <div className="summary-table-wrapper">
               <table className="summary-table">
                 <thead>

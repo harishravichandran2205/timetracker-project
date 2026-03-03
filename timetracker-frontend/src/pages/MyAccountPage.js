@@ -5,6 +5,8 @@ import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/MyAccountPage.css";
+import PasswordPolicyHint from "../components/PasswordPolicyHint";
+import { validatePasswordPolicy } from "../utils/passwordPolicy";
 
 const MyAccountPage = () => {
   const navigate = useNavigate();
@@ -75,6 +77,17 @@ const MyAccountPage = () => {
   const handleChangePassword = async () => {
     setOtpMessage("");
     setSuccessMessage("");
+    const passwordValidationMessage = validatePasswordPolicy({
+      password: newPassword,
+      firstName: userData?.firstName,
+      lastName: userData?.lastName,
+      email: userData?.email
+    });
+    if (passwordValidationMessage) {
+      setOtpMessage(passwordValidationMessage);
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       const email = userData?.email;
@@ -93,7 +106,8 @@ const MyAccountPage = () => {
       }
     } catch (err) {
       console.error(err);
-      setOtpMessage("Error changing password. Try again later.");
+      const backendMessage = err.response?.data?.error?.message || err.response?.data?.message || err.response?.data?.data?.message;
+      setOtpMessage(backendMessage || "Error changing password. Try again later.");
     }
   };
 
@@ -146,6 +160,7 @@ const MyAccountPage = () => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
+                  <PasswordPolicyHint />
                   <button className="btn save-password-btn" onClick={handleChangePassword}>
                     Save New Password
                   </button>

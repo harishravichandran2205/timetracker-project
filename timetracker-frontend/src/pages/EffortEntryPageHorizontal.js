@@ -30,6 +30,7 @@ const EffortEntryPageHorizontal = () => {
   const [duplicateRowIndexes, setDuplicateRowIndexes] = useState([]);
   const tableWrapperRef = useRef(null);
   const [savedRowsSnapshot, setSavedRowsSnapshot] = useState([]);
+  const TICKET_DESC_CACHE_KEY = "ticketDescriptionCache";
 
   // ✅ Helpers
   const formatForBackend = (dmy) => {
@@ -54,6 +55,31 @@ const EffortEntryPageHorizontal = () => {
      };
 
   const pad2 = (n) => String(n).padStart(2, "0");
+  const normalizeBillable = (value) => (String(value || "").trim().toLowerCase() === "yes" ? "Yes" : "No");
+  const normalizeTicketKey = (ticket) => String(ticket || "").trim().toUpperCase();
+
+  const [ticketDescriptionCache, setTicketDescriptionCache] = useState(() => {
+    try {
+      const raw = localStorage.getItem(TICKET_DESC_CACHE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const setTicketDescriptionInCache = (ticket, description) => {
+    const key = normalizeTicketKey(ticket);
+    const value = String(description || "").trim();
+    if (!key || !value) return;
+
+    setTicketDescriptionCache((prev) => {
+      if (prev[key] === value) return prev;
+      const next = { ...prev, [key]: value };
+      localStorage.setItem(TICKET_DESC_CACHE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Handles keys like "dd-MM-yyyy" or "yyyy-MM-dd" and normalizes to "dd-MM-yyyy"
   const normalizeDateKey = (raw) => {
@@ -231,7 +257,7 @@ const EffortEntryPageHorizontal = () => {
     ticket: "",
     ticketDescription: "",
     category: "",
-    billable: "",
+    billable: "No",
     description: "",
     hoursByDate: {},
   });
@@ -370,6 +396,9 @@ const EffortEntryPageHorizontal = () => {
       newRows[rowIndex].category = "";
       newRows[rowIndex].project = "";
     }
+    if (field === "ticket") {
+      newRows[rowIndex].ticketDescription = "";
+    }
 
     setRows(newRows);
     setIsDirty(true);
@@ -494,7 +523,6 @@ const EffortEntryPageHorizontal = () => {
        r.ticket,
        r.ticketDescription,
        r.category,
-       r.billable,
        r.description,
      ].some((v) => v && v.toString().trim() !== "");
      return hasHours || hasMainFields;
@@ -522,7 +550,6 @@ const EffortEntryPageHorizontal = () => {
        !r.ticket ||
        !r.ticketDescription ||
        !r.category ||
-       !r.billable ||
 
        !hasHours;
    });
@@ -549,7 +576,7 @@ const EffortEntryPageHorizontal = () => {
        (r.ticket || "").trim(),
        (r.ticketDescription || "").trim(),
        (r.category || "").trim(),
-       (r.billable || "").trim(),
+       normalizeBillable(r.billable),
        (r.description || "").trim(),
        hoursPart,
      ].join("~");
@@ -671,7 +698,7 @@ const EffortEntryPageHorizontal = () => {
        ticketDescription: row.ticketDescription,
        category: row.category,
        description: row.description,
-       billable: row.billable,
+       billable: normalizeBillable(row.billable),
        hoursByDate: normalizedHoursByDate,
      };
    });
@@ -742,7 +769,7 @@ const EffortEntryPageHorizontal = () => {
 
 
 
- const fetchEffortEntries = async (showMessage) => {
+  const fetchEffortEntries = async (showMessage) => {
    const token = localStorage.getItem("token");
    const email = localStorage.getItem("email");
 
@@ -778,12 +805,19 @@ const EffortEntryPageHorizontal = () => {
        ticket: entry.ticket || "",
        ticketDescription: entry.ticketDescription || "",
        category: entry.category || "",
-       billable: entry.billable || "",
+       billable: normalizeBillable(entry.billable),
        description: entry.description || "",
        hoursByDate: entry.hoursByDate || {},
 
      }));
      const finalRows = mappedRows.length > 0 ? mappedRows : [createNewRow()];
+
+     mappedRows.forEach((entry) => {
+       const description = String(entry.ticketDescription || "").trim();
+       if (description) {
+         setTicketDescriptionInCache(entry.ticket, description);
+       }
+     });
 
      setRows(finalRows);
 
@@ -822,35 +856,178 @@ const EffortEntryPageHorizontal = () => {
  const [descModal, setDescModal] = useState({
    open: false,
    rowIndex: null,
-   value: "",
+   ticket: "",
+   ticketDescription: "",
+   taskDescription: "",
+   ticketFound: false,
+   ticketExistsInDb: false,
+   ticketDescriptionEditable: true,
+   loading: false,
  });
 
-const handleOpenDescription = (rowIndex) => {
-  const current = rows[rowIndex]?.description || "";
+const closeDescModal = () => {
   setDescModal({
-    open: true,
-    rowIndex,
-    value: current,
+    open: false,
+    rowIndex: null,
+    ticket: "",
+    ticketDescription: "",
+    taskDescription: "",
+    ticketFound: false,
+    ticketExistsInDb: false,
+    ticketDescriptionEditable: true,
+    loading: false,
   });
 };
 
-const handleDescriptionChange = (e) => {
-  const value = e.target.value;
-  setDescModal((prev) => ({ ...prev, value }));
+const handleOpenDescription = async (rowIndex) => {
+  const token = localStorage.getItem("token");
+  const row = rows[rowIndex];
+  if (!row) return;
+
+  const ticket = (row.ticket || "").trim();
+  const ticketKey = normalizeTicketKey(ticket);
+  if (!ticket) {
+    showPopup("Enter Ticket Number before opening Desc", "error");
+    return;
+  }
+  const localTicketDescription =
+    rows.find(
+      (r) =>
+        (r.ticket || "").trim().toUpperCase() === ticket.toUpperCase() &&
+        (r.ticketDescription || "").trim()
+    )?.ticketDescription || "";
+  const cachedTicketDescription = ticketDescriptionCache[ticketKey] || "";
+  const resolvedDescription = cachedTicketDescription || localTicketDescription || row.ticketDescription || "";
+  const hasResolvedDescription = Boolean((resolvedDescription || "").trim());
+
+  setDescModal({
+    open: true,
+    rowIndex,
+    ticket,
+    ticketDescription: resolvedDescription,
+    taskDescription: row.description || "",
+    ticketFound: hasResolvedDescription,
+    ticketExistsInDb: false,
+    ticketDescriptionEditable: !hasResolvedDescription,
+    loading: true,
+  });
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/api/tickets/description`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { ticket },
+    });
+
+    const exists = Boolean(response.data?.exists);
+    const dbDescription = response.data?.ticketDescription || "";
+    if (exists && dbDescription.trim()) {
+      setTicketDescriptionInCache(ticket, dbDescription);
+    }
+
+    if (exists) {
+      setRows((prev) => prev.map((r) => (
+        (r.ticket || "").trim().toUpperCase() === ticket.toUpperCase()
+          ? { ...r, ticketDescription: dbDescription || cachedTicketDescription || r.ticketDescription || resolvedDescription }
+          : r
+      )));
+    }
+
+    setDescModal((prev) => ({
+      ...prev,
+      loading: false,
+      ticketFound: exists || hasResolvedDescription,
+      ticketExistsInDb: exists,
+      ticketDescription: exists
+        ? (dbDescription || cachedTicketDescription || resolvedDescription)
+        : resolvedDescription,
+      ticketDescriptionEditable: !(exists || hasResolvedDescription),
+    }));
+  } catch (err) {
+    console.error("Ticket lookup failed:", err);
+    showPopup("Could not fetch ticket description", "error");
+    setDescModal((prev) => ({
+      ...prev,
+      loading: false,
+      ticketFound: hasResolvedDescription,
+      ticketExistsInDb: false,
+      ticketDescription: resolvedDescription || prev.ticketDescription,
+      ticketDescriptionEditable: !hasResolvedDescription,
+    }));
+  }
 };
 
-const handleDescriptionSave = () => {
+const handleTaskDescriptionChange = (e) => {
+  const value = e.target.value;
+  setDescModal((prev) => ({ ...prev, taskDescription: value }));
+};
+
+const handleTicketDescriptionChange = (e) => {
+  const value = e.target.value;
+  setDescModal((prev) => ({ ...prev, ticketDescription: value }));
+};
+
+const handleEnableTicketDescriptionEdit = () => {
+  setDescModal((prev) => ({ ...prev, ticketDescriptionEditable: true }));
+};
+
+const handleDescriptionSave = async () => {
   if (descModal.rowIndex == null) return;
 
+  const token = localStorage.getItem("token");
+  const ticketDescription = (descModal.ticketDescription || "").trim();
+
+  if (!ticketDescription) {
+    showPopup("Ticket Description is required", "error");
+    return;
+  }
+
+  setTicketDescriptionInCache(descModal.ticket, ticketDescription);
+
+  const row = rows[descModal.rowIndex];
+  const currentTicketDescription = (row?.ticketDescription || "").trim();
+  const ticketDescriptionChanged = currentTicketDescription !== ticketDescription;
+
+  if (ticketDescriptionChanged) {
+    try {
+      await axios.put(
+        `${API_BASE_URL}/api/tickets/description`,
+        {
+          ticket: descModal.ticket,
+          ticketDescription,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (err) {
+      // If ticket doesn't exist yet in DB, keep local value; DB will get value on task save.
+      if (err?.response?.status !== 404) {
+        console.error("Failed to update ticket description:", err);
+        showPopup("Failed to update Ticket Description in DB", "error");
+        return;
+      }
+    }
+  }
+
   const newRows = [...rows];
-  newRows[descModal.rowIndex].description = descModal.value;
+  const targetTicket = descModal.ticket;
+  for (let i = 0; i < newRows.length; i += 1) {
+    if ((newRows[i].ticket || "").trim() === targetTicket) {
+      newRows[i].ticketDescription = ticketDescription;
+    }
+  }
+  newRows[descModal.rowIndex].description = descModal.taskDescription;
+
   setRows(newRows);
   setIsDirty(true);
-  setDescModal({ open: false, rowIndex: null, value: "" });
+  closeDescModal();
 };
 
 const handleDescriptionCancel = () => {
-  setDescModal({ open: false, rowIndex: null, value: "" });
+  closeDescModal();
 };
 
 
@@ -987,18 +1164,52 @@ const handleDescriptionCancel = () => {
           {descModal.open && (
             <div className="task-desc-modal-backdrop">
               <div className="task-desc-modal">
-                <h3>Task Description</h3>
-                <textarea
-                  value={descModal.value}
-                  onChange={handleDescriptionChange}
-                  rows={8}
-                  placeholder="Enter detailed task description here..."
-                />
+                <h3>Desc</h3>
+                <div className="desc-modal-ticket">Ticket Number: {descModal.ticket}</div>
+                {descModal.loading ? (
+                  <div className="desc-modal-loading">Checking ticket in DB...</div>
+                ) : (
+                  <>
+                    <div className="desc-modal-section">
+                      <div className="desc-modal-section-header">
+                        <label>Ticket Description</label>
+                        <button
+                          type="button"
+                          className="btn desc-edit-btn"
+                          onClick={handleEnableTicketDescriptionEdit}
+                          disabled={descModal.ticketDescriptionEditable}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <textarea
+                        value={descModal.ticketDescription}
+                        onChange={handleTicketDescriptionChange}
+                        rows={3}
+                        disabled={!descModal.ticketDescriptionEditable}
+                        placeholder="Enter ticket description"
+                      />
+                    </div>
+                    <div className="desc-modal-section">
+                      <label>Task Description</label>
+                      <textarea
+                        value={descModal.taskDescription}
+                        onChange={handleTaskDescriptionChange}
+                        rows={8}
+                        placeholder="Enter task description for this entry"
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="task-desc-modal-actions">
                   <button className="btn" onClick={handleDescriptionCancel}>
                     Cancel
                   </button>
-                  <button className="btn save-btn" onClick={handleDescriptionSave}>
+                  <button
+                    className="btn save-btn"
+                    onClick={handleDescriptionSave}
+                    disabled={descModal.loading}
+                  >
                     Save
                   </button>
                 </div>

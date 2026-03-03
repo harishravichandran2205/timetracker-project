@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from "../config/BackendApiConfig";
 import './css/ForgotPasswordPage.css';
+import PasswordPolicyHint from "../components/PasswordPolicyHint";
+import { validatePasswordPolicy } from "../utils/passwordPolicy";
 
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
@@ -69,7 +71,6 @@ const ForgotPasswordPage = () => {
     setMessage('');
 
     // Validations
-    const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*\d).{8,}$/;
     if (!otpInput) {
       setError("Please enter OTP.");
       return;
@@ -82,8 +83,9 @@ const ForgotPasswordPage = () => {
       setError("Passwords do not match.");
       return;
     }
-    if (!passwordRegex.test(newPassword)) {
-      setError("Password must be at least 8 characters, include uppercase, number and special character.");
+    const passwordValidationMessage = validatePasswordPolicy({ password: newPassword, email });
+    if (passwordValidationMessage) {
+      setError(passwordValidationMessage);
       return;
     }
 
@@ -101,7 +103,8 @@ const ForgotPasswordPage = () => {
         setError(response.data.message || "OTP incorrect or expired.");
       }
     } catch (err) {
-      setError("Error changing password. Try again later.");
+      const backendMessage = err.response?.data?.error?.message || err.response?.data?.message || err.response?.data?.data?.message;
+      setError(backendMessage || "Error changing password. Try again later.");
       console.error(err);
     } finally {
       setLoadingOtp(false);
@@ -165,6 +168,7 @@ const ForgotPasswordPage = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
+              <PasswordPolicyHint />
 
               <button className="btn" onClick={handleChangePassword}>
                 Change Password
