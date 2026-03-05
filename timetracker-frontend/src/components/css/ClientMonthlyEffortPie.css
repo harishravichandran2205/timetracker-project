@@ -1,0 +1,95 @@
+.client-pie-title {
+  text-align: center;
+  margin: 0 0 10px 0;
+}
+
+.client-pie-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.client-pie-select {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 8px;
+  background: #fff;
+  color: #1e293b;
+}
+
+.client-pie-chart-wrap {
+  position: relative;
+  margin-top: 14px;
+}
+
+.client-pie-center-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.client-pie-table {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.client-pie-table-head {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 86px 110px 86px;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--brand-primary, #004aad);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.client-pie-table-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 86px 110px 86px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #eef2f7;
+  color: #334155;
+  font-size: 13px;
+}
+
+.client-pie-table-row span:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.client-pie-table-row span:last-child {
+  text-align: right;
+}
+
+.client-pie-table-head span:not(:first-child),
+.client-pie-table-row span:not(:first-child) {
+  text-align: right;
+}
+
+.client-pie-center-client {
+  max-width: 120px;
+  margin: 2px auto 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #64748b;
+}
+
+.client-pie-empty {
+  text-align: center;
+  color: #6b7280;
+}

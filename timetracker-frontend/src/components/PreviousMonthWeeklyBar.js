@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -9,47 +9,42 @@ import {
   Legend,
 } from "chart.js";
 
-/* ===== Chart.js registration ===== */
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-/* ================= HELPERS ================= */
-
-// Parse any date format safely → JS Date
 const parseDateSafe = (raw) => {
   if (!raw) return null;
 
-  // dd-MM-yyyy
   if (/^\d{2}-\d{2}-\d{4}$/.test(raw)) {
     const [d, m, y] = raw.split("-");
     return new Date(`${y}-${m}-${d}`);
   }
 
-  // yyyy-MM-dd
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     return new Date(raw);
   }
 
-  // "3 Jan (Mon)" / "03 Jan (Mon)"
   if (/[A-Za-z]{3}/.test(raw)) {
     const parts = raw.split(" ");
     const day = parts[0].padStart(2, "0");
     const monthMap = {
-      Jan: "01", Feb: "02", Mar: "03", Apr: "04",
-      May: "05", Jun: "06", Jul: "07", Aug: "08",
-      Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
     };
     const month = monthMap[parts[1]];
     const year = new Date().getFullYear();
     return new Date(`${year}-${month}-${day}`);
   }
 
-  // fallback
   const parsed = new Date(raw);
   return isNaN(parsed) ? null : parsed;
 };
@@ -67,13 +62,12 @@ const normalizeToMidnight = (d) => {
 
 const getMonday = (date) => {
   const d = normalizeToMidnight(date);
-  const day = d.getDay(); // 0=Sun, 1=Mon...
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   return d;
 };
 
-// Week index relative to calendar weeks (Mon-Sun) within the month
 const getWeekIndexFromRange = (date, rangeStart) => {
   const msInDay = 1000 * 60 * 60 * 24;
   const monthStart = normalizeToMidnight(rangeStart);
@@ -87,7 +81,7 @@ const formatRangeLabel = (start, end) => {
   const startDay = start.getDate();
   const endDay = end.getDate();
   const monthName = start.toLocaleString("default", { month: "short" });
-  return `${monthName} ${startDay}–${endDay}`;
+  return `${monthName} ${startDay}-${endDay}`;
 };
 
 const buildWeekLabelMap = (rangeStart, rangeEnd) => {
@@ -106,7 +100,6 @@ const buildWeekLabelMap = (rangeStart, rangeEnd) => {
 
     const clampedStart = weekStart < monthStart ? monthStart : weekStart;
     const clampedEnd = weekEnd > monthEnd ? monthEnd : weekEnd;
-
     labels[index] = formatRangeLabel(clampedStart, clampedEnd);
 
     cursor = new Date(cursor.getTime() + 7 * msInDay);
@@ -116,9 +109,41 @@ const buildWeekLabelMap = (rangeStart, rangeEnd) => {
   return labels;
 };
 
-/* =========================================== */
+const clientSelectStyle = {
+  minWidth: 180,
+  height: 32,
+  border: "1px solid #cbd5e1",
+  borderRadius: 8,
+  padding: "0 8px",
+  background: "#fff",
+  color: "#1e293b",
+};
 
 const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride }) => {
+  const [selectedClient, setSelectedClient] = useState("all");
+
+  const clientOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (rows || [])
+            .map((r) => String(r.client || "").trim())
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
+
+  useEffect(() => {
+    if (!clientOptions.length) {
+      setSelectedClient("all");
+      return;
+    }
+    if (selectedClient !== "all" && !clientOptions.includes(selectedClient)) {
+      setSelectedClient("all");
+    }
+  }, [clientOptions, selectedClient]);
+
   const getThemeColors = () => {
     if (typeof window === "undefined") {
       return { primary: "#004aad", accent: "#0066ff" };
@@ -141,16 +166,28 @@ const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride
 
   const { primary, accent } = getThemeColors();
   const { tagBg, tagText } = getTagColors();
+
   const { labels, billable, nonBillable, monthLabel, noDataWeeks, totalHours } = useMemo(() => {
     const range = normalizeMonthRange(rangeStart, rangeEnd);
     if (!range) {
-      return { labels: [], billable: [], nonBillable: [], monthLabel: "", noDataWeeks: [], totalHours: 0 };
+      return {
+        labels: [],
+        billable: [],
+        nonBillable: [],
+        monthLabel: "",
+        noDataWeeks: [],
+        totalHours: 0,
+      };
     }
 
     const { start, end } = range;
     const weekly = {};
+    const filteredRows =
+      selectedClient === "all"
+        ? rows
+        : rows.filter((row) => String(row.client || "").trim() === selectedClient);
 
-    rows.forEach((row) => {
+    filteredRows.forEach((row) => {
       Object.entries(row.hoursByDate || {}).forEach(([rawDate, hrs]) => {
         if (!hrs) return;
 
@@ -158,7 +195,6 @@ const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride
         if (!date || date < start || date > end) return;
 
         const week = getWeekIndexFromRange(date, start);
-
         if (!weekly[week]) {
           weekly[week] = { billable: 0, nonBillable: 0 };
         }
@@ -196,34 +232,13 @@ const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride
       monthLabel,
       totalHours,
     };
-  }, [rows, rangeStart, rangeEnd, monthLabelOverride]);
-
-  if (labels.length === 0 || totalHours === 0) {
-    return (
-      <div className="dashboard-card dashboard-card--bar">
-        <h4 style={{ textAlign: "center" }}>
-          {monthLabel || "This Month"} – Weekly Effort
-        </h4>
-        <p style={{ textAlign: "center", color: "#888" }}>
-          No data available for this month
-        </p>
-      </div>
-    );
-  }
+  }, [rows, rangeStart, rangeEnd, monthLabelOverride, selectedClient]);
 
   const data = {
     labels,
     datasets: [
-      {
-        label: "Billable",
-        data: billable,
-        backgroundColor: primary,
-      },
-      {
-        label: "Non-Billable",
-        data: nonBillable,
-        backgroundColor: accent,
-      },
+      { label: "Billable", data: billable, backgroundColor: primary },
+      { label: "Non-Billable", data: nonBillable, backgroundColor: accent },
     ],
   };
 
@@ -241,10 +256,7 @@ const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride
       x: { stacked: true },
       y: {
         stacked: true,
-        title: {
-          display: true,
-          text: "Hours",
-        },
+        title: { display: true, text: "Hours" },
       },
     },
   };
@@ -279,15 +291,20 @@ const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride
 
           const left = x - boxWidth / 2;
           const top = y - boxHeight / 2;
+          const radius = 6;
 
           ctx.fillStyle = tagBg;
-          const radius = 6;
           ctx.beginPath();
           ctx.moveTo(left + radius, top);
           ctx.lineTo(left + boxWidth - radius, top);
           ctx.quadraticCurveTo(left + boxWidth, top, left + boxWidth, top + radius);
           ctx.lineTo(left + boxWidth, top + boxHeight - radius);
-          ctx.quadraticCurveTo(left + boxWidth, top + boxHeight, left + boxWidth - radius, top + boxHeight);
+          ctx.quadraticCurveTo(
+            left + boxWidth,
+            top + boxHeight,
+            left + boxWidth - radius,
+            top + boxHeight
+          );
           ctx.lineTo(left + radius, top + boxHeight);
           ctx.quadraticCurveTo(left, top + boxHeight, left, top + boxHeight - radius);
           ctx.lineTo(left, top + radius);
@@ -306,10 +323,26 @@ const PreviousMonthWeeklyBar = ({ rows, rangeStart, rangeEnd, monthLabelOverride
 
   return (
     <div className="dashboard-card dashboard-card--bar">
-      <h4 style={{ textAlign: "center" }}>
-        {monthLabel} – Weekly Effort
-      </h4>
-      <Bar data={data} options={options} plugins={plugins} />
+      <h4 style={{ textAlign: "center" }}>{monthLabel || "This Month"} - Weekly Effort</h4>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+        <select
+          value={selectedClient}
+          onChange={(e) => setSelectedClient(e.target.value)}
+          style={clientSelectStyle}
+        >
+          <option value="all">All Clients</option>
+          {clientOptions.map((client) => (
+            <option key={client} value={client}>
+              {client}
+            </option>
+          ))}
+        </select>
+      </div>
+      {labels.length === 0 || totalHours === 0 ? (
+        <p style={{ textAlign: "center", color: "#888" }}>No data available for this month</p>
+      ) : (
+        <Bar data={data} options={options} plugins={plugins} />
+      )}
     </div>
   );
 };

@@ -5,6 +5,8 @@ import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/MyAccountPage.css";
+import { FaLock, FaLockOpen } from "react-icons/fa";
+import CommonLoader from "../components/CommonLoader";
 import PasswordPolicyHint from "../components/PasswordPolicyHint";
 import { validatePasswordPolicy } from "../utils/passwordPolicy";
 
@@ -16,8 +18,23 @@ const MyAccountPage = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpInput, setOtpInput] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [otpMessage, setOtpMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [loadingOtpRequest, setLoadingOtpRequest] = useState(false);
+
+  const getNetworkAwareError = (err, fallbackMessage) => {
+    if (axios.isAxiosError(err) && err.code === "ERR_NETWORK") {
+      return "Cannot reach server. Please try again Later.";
+    }
+    return fallbackMessage;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -47,10 +64,71 @@ const MyAccountPage = () => {
 
   const storedUsername = localStorage.getItem("username");
 
+  const handleStartEditProfile = () => {
+    setProfileMessage("");
+    setProfileError("");
+    setOtpSent(false);
+    setOtpInput("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setOtpMessage("");
+    setEditFirstName(userData?.firstName || "");
+    setEditLastName(userData?.lastName || "");
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setProfileMessage("");
+    setProfileError("");
+    setIsEditingProfile(false);
+    setEditFirstName(userData?.firstName || "");
+    setEditLastName(userData?.lastName || "");
+  };
+
+  const handleSaveProfile = async () => {
+    setProfileMessage("");
+    setProfileError("");
+
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      setProfileError("First name and last name are required.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const firstName = editFirstName.trim();
+      const lastName = editLastName.trim();
+      await axios.put(
+        `${API_BASE_URL}/api/users/profile`,
+        { firstName, lastName },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      localStorage.setItem("firstName", firstName);
+      localStorage.setItem("lastName", lastName);
+      localStorage.setItem("username", `${firstName} ${lastName}`.trim());
+
+      setUserData((prev) => ({
+        ...prev,
+        firstName,
+        lastName,
+      }));
+      setProfileMessage("Profile updated successfully.");
+      setIsEditingProfile(false);
+    } catch (err) {
+      console.error(err);
+      setProfileError(getNetworkAwareError(err, "Failed to update profile. Try again later."));
+    }
+  };
+
   // ===== Request OTP =====
   const handleRequestOtp = async () => {
     setOtpMessage("");
     setSuccessMessage("");
+    setIsEditingProfile(false);
+    setProfileMessage("");
+    setProfileError("");
+    setLoadingOtpRequest(true);
     try {
       const token = localStorage.getItem("token");
       const email = userData?.email;
@@ -69,7 +147,9 @@ const MyAccountPage = () => {
       }
     } catch (err) {
       console.error(err);
-      setOtpMessage("Error sending OTP. Try again later.");
+      setOtpMessage(getNetworkAwareError(err, "Error sending OTP. Try again later."));
+    } finally {
+      setLoadingOtpRequest(false);
     }
   };
 
@@ -83,6 +163,14 @@ const MyAccountPage = () => {
       lastName: userData?.lastName,
       email: userData?.email
     });
+    if (!newPassword || !confirmPassword) {
+      setOtpMessage("Please enter new password and confirm password.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setOtpMessage("New password and confirm password must match.");
+      return;
+    }
     if (passwordValidationMessage) {
       setOtpMessage(passwordValidationMessage);
       return;
@@ -101,13 +189,14 @@ const MyAccountPage = () => {
         setOtpSent(false);
         setOtpInput("");
         setNewPassword("");
+        setConfirmPassword("");
       } else {
         setOtpMessage(response.data.data.message || "OTP incorrect or expired.");
       }
     } catch (err) {
       console.error(err);
       const backendMessage = err.response?.data?.error?.message || err.response?.data?.message || err.response?.data?.data?.message;
-      setOtpMessage(backendMessage || "Error changing password. Try again later.");
+      setOtpMessage(backendMessage || getNetworkAwareError(err, "Error changing password. Try again later."));
     }
   };
 
@@ -120,7 +209,7 @@ const MyAccountPage = () => {
           <h2 className="page-title">My Account</h2>
 
           {loading ? (
-            <p>Loading your account details...</p>
+            <CommonLoader size="sm" />
           ) : error ? (
             <div className="error-message">{error}</div>
           ) : (
@@ -131,19 +220,59 @@ const MyAccountPage = () => {
               </div>
               <div className="account-row">
                 <label>First Name:</label>
-                <span>{userData?.firstName}</span>
+                {isEditingProfile ? (
+                  <input
+                    type="text"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                  />
+                ) : (
+                  <span>{userData?.firstName}</span>
+                )}
               </div>
               <div className="account-row">
                 <label>Last Name:</label>
-                <span>{userData?.lastName}</span>
+                {isEditingProfile ? (
+                  <input
+                    type="text"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                  />
+                ) : (
+                  <span>{userData?.lastName}</span>
+                )}
               </div>
 
-              {/* Change Password Section */}
-              {!otpSent && (
-                <button className="btn change-password-btn" onClick={handleRequestOtp}>
-                  Change Password
-                </button>
+              {!isEditingProfile && !otpSent ? (
+                <div className="account-action-row">
+                  <button className="btn edit-profile-btn" onClick={handleStartEditProfile}>
+                    Edit Profile
+                  </button>
+                  <button
+                    className="btn change-password-btn"
+                    onClick={handleRequestOtp}
+                    disabled={loadingOtpRequest}
+                  >
+                    Change Password
+                  </button>
+                </div>
+              ) : (
+                isEditingProfile && (
+                  <div className="profile-action-row">
+                    <button className="btn save-profile-btn" onClick={handleSaveProfile}>
+                      Save
+                    </button>
+                    <button className="btn cancel-profile-btn" onClick={handleCancelEditProfile}>
+                      Cancel
+                    </button>
+                  </div>
+                )
               )}
+
+              {profileMessage && <div className="success-message">{profileMessage}</div>}
+              {profileError && <div className="error-message">{profileError}</div>}
+
+              {/* Change Password Section */}
 
               {otpSent && (
                 <div className="otp-section">
@@ -155,10 +284,27 @@ const MyAccountPage = () => {
                     onChange={(e) => setOtpInput(e.target.value)}
                   />
                   <label>New Password:</label>
+                  <div className="input-with-icon">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                    {newPassword && (
+                      <span
+                        className={`input-icon ${showNewPassword ? "active" : ""}`}
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        title={showNewPassword ? "Hide password" : "Show password"}
+                      >
+                        {showNewPassword ? <FaLockOpen /> : <FaLock />}
+                      </span>
+                    )}
+                  </div>
+                  <label>Confirm Password:</label>
                   <input
                     type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                   <PasswordPolicyHint />
                   <button className="btn save-password-btn" onClick={handleChangePassword}>
@@ -169,6 +315,9 @@ const MyAccountPage = () => {
 
               {successMessage && <div className="success-message">{successMessage}</div>}
             </div>
+          )}
+          {loadingOtpRequest && (
+            <CommonLoader overlay size="sm" />
           )}
         </main>
       </div>

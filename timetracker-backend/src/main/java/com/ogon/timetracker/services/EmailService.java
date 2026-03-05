@@ -1,5 +1,6 @@
 package com.ogon.timetracker.services;
 
+import com.ogon.timetracker.exceptions.InvalidEmailDomainException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -16,12 +17,12 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(toEmail);
             message.setSubject("Your OTP for Time Tracker");
-            message.setText("Your OTP is: " + otp + "\nIt is valid for 10 minutes.");
+            message.setText("Your Password Change OTP is: " + otp + "\nIt is valid for 10 minutes.");
             mailSender.send(message);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            throw new InvalidEmailDomainException("Error in Sending OTP.Please Try Again Later");
         }
     }
 }
