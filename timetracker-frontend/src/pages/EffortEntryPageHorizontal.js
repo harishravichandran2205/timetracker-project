@@ -11,6 +11,7 @@ import "../components/css/EffortEntryHorizontalTable.css";
 import { PiArrowFatLeftFill } from "react-icons/pi";
 import { PiArrowFatRightFill } from "react-icons/pi";
 import { IoIosSave } from "react-icons/io";
+import CommonLoader from "../components/CommonLoader";
 
 
 
@@ -30,6 +31,8 @@ const EffortEntryPageHorizontal = () => {
   const [duplicateRowIndexes, setDuplicateRowIndexes] = useState([]);
   const tableWrapperRef = useRef(null);
   const [savedRowsSnapshot, setSavedRowsSnapshot] = useState([]);
+  const [isFetchingEntries, setIsFetchingEntries] = useState(false);
+  const [isSavingEntries, setIsSavingEntries] = useState(false);
   const TICKET_DESC_CACHE_KEY = "ticketDescriptionCache";
 
   // ✅ Helpers
@@ -737,6 +740,7 @@ const EffortEntryPageHorizontal = () => {
 
    // ✅ Send to backend
    try {
+    setIsSavingEntries(true);
     console.log("HOURS PAYLOAD", payload.map(p => p.hoursByDate));
      const response = await axios.post(
        `${API_BASE_URL}/api/tasks-new`,
@@ -762,6 +766,8 @@ const EffortEntryPageHorizontal = () => {
      const errMsg =
        error.response?.data?.error || error.message || "Failed to save tasks.";
      showPopup(errMsg, "error");
+   } finally {
+     setIsSavingEntries(false);
    }
  };
 
@@ -776,6 +782,7 @@ const EffortEntryPageHorizontal = () => {
    if (!email || !dateRange.start || !dateRange.end) return;
 
    try {
+     setIsFetchingEntries(true);
      const response = await axios.get(`${API_BASE_URL}/api/effort-entry-horizon`, {
        headers: { Authorization: `Bearer ${token}` },
        params: {
@@ -850,6 +857,8 @@ const EffortEntryPageHorizontal = () => {
        err?.message ||
        "Failed to load effort entries";
      showPopup(errMsg, "error");
+   } finally {
+     setIsFetchingEntries(false);
    }
  };
 
@@ -1089,7 +1098,7 @@ const handleDescriptionCancel = () => {
             </select>
             <div className="save-btn-div">
 
-            <button className="btn save-btn" onClick={handleSave}>
+            <button className="btn save-btn" onClick={handleSave} disabled={isSavingEntries || isFetchingEntries}>
                                 Save <IoIosSave />
             </button>
             </div>
@@ -1141,7 +1150,7 @@ const handleDescriptionCancel = () => {
 
               {showBottomSave && (
                 <div className="bottom-save-btn">
-                  <button className="btn save-btn" onClick={handleSave}>
+                  <button className="btn save-btn" onClick={handleSave} disabled={isSavingEntries || isFetchingEntries}>
                     Save
                   </button>
                 </div>
@@ -1216,6 +1225,7 @@ const handleDescriptionCancel = () => {
               </div>
             </div>
           )}
+          {(isFetchingEntries || isSavingEntries) && <CommonLoader overlay />}
         </main>
       </div>
     </div>

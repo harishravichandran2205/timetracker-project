@@ -1,0 +1,75 @@
+.common-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.common-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.common-loader-spin-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.common-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(15, 23, 42, 0.18);
+  border-top-color: #0f172a;
+  animation: common-ring-spin 0.9s linear infinite;
+}
+
+.common-loader-logo {
+  width: 68%;
+  height: 68%;
+  display: inline-block;
+  object-fit: contain;
+  object-position: center center;
+  border-radius: 50%;
+}
+
+.common-loader-sm .common-loader-spin-wrap {
+  width: 24px;
+  height: 24px;
+}
+
+.common-loader-md .common-loader-spin-wrap {
+  width: 52px;
+  height: 52px;
+}
+
+.common-loader-lg .common-loader-spin-wrap {
+  width: 76px;
+  height: 76px;
+}
+
+.common-loader-label {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+@keyframes common-ring-spin {
+  from {
+    transform: rotate(0turn);
+  }
+  to {
+    transform: rotate(1turn);
+  }
+}

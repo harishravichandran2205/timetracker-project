@@ -7,6 +7,7 @@ import SummaryTable from "../components/SummaryTable";
 import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import UnsavedChangesModal from "../components/UnsavedChangesModel";
+import CommonLoader from "../components/CommonLoader";
 import "./css/SummaryPage.css";
 import * as XLSX from "xlsx-js-style";
 import jsPDF from "jspdf";
@@ -452,7 +453,7 @@ const handleUnSave = () => {
             )}
           </div>
 
-          {loading && <p>Loading summary...</p>}
+          {loading && <CommonLoader overlay />}
           {error && <div className="popup error">{error}</div>}
           {success && <div className="popup success">{success}</div>}
 

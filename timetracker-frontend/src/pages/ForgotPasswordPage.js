@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from "../config/BackendApiConfig";
 import './css/ForgotPasswordPage.css';
+import { FaLock, FaLockOpen } from "react-icons/fa";
+import CommonLoader from "../components/CommonLoader";
 import PasswordPolicyHint from "../components/PasswordPolicyHint";
 import { validatePasswordPolicy } from "../utils/passwordPolicy";
 
@@ -15,9 +17,17 @@ const ForgotPasswordPage = () => {
   const [otpInput, setOtpInput] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loadingOtp, setLoadingOtp] = useState(false);
+
+  const getNetworkAwareError = (err, fallbackMessage) => {
+    if (axios.isAxiosError(err) && err.code === "ERR_NETWORK") {
+      return "Cannot reach server. Please try again later.";
+    }
+    return fallbackMessage;
+  };
 
   // ===== Step 1: Check if email exists =====
   const handleCheckEmail = async () => {
@@ -36,8 +46,9 @@ const ForgotPasswordPage = () => {
       } else {
         setError("Email not found.");
       }
+      console.log(response);
     } catch (err) {
-      setError("Error checking email. Try again later.");
+      setError(getNetworkAwareError(err, "Error checking email. Try again later."));
       console.error(err);
     } finally {
       setLoadingOtp(false);
@@ -58,7 +69,7 @@ const ForgotPasswordPage = () => {
         setError("Failed to send OTP. Try again.");
       }
     } catch (err) {
-      setError("Error sending OTP. Try again later.");
+      setError(getNetworkAwareError(err, "Error sending OTP. Try again later."));
       console.error(err);
     } finally {
       setLoadingOtp(false);
@@ -71,6 +82,10 @@ const ForgotPasswordPage = () => {
     setMessage('');
 
     // Validations
+    const passwordValidationMessage = validatePasswordPolicy({
+      password: newPassword,
+      email
+    });
     if (!otpInput) {
       setError("Please enter OTP.");
       return;
@@ -83,7 +98,6 @@ const ForgotPasswordPage = () => {
       setError("Passwords do not match.");
       return;
     }
-    const passwordValidationMessage = validatePasswordPolicy({ password: newPassword, email });
     if (passwordValidationMessage) {
       setError(passwordValidationMessage);
       return;
@@ -103,8 +117,7 @@ const ForgotPasswordPage = () => {
         setError(response.data.message || "OTP incorrect or expired.");
       }
     } catch (err) {
-      const backendMessage = err.response?.data?.error?.message || err.response?.data?.message || err.response?.data?.data?.message;
-      setError(backendMessage || "Error changing password. Try again later.");
+      setError(getNetworkAwareError(err, "Error changing password. Try again later."));
       console.error(err);
     } finally {
       setLoadingOtp(false);
@@ -153,11 +166,22 @@ const ForgotPasswordPage = () => {
 
               <div className="form-group">
                 <label>New Password:</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
+                <div className="input-with-icon">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  {newPassword && (
+                    <span
+                      className={`input-icon ${showNewPassword ? "active" : ""}`}
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      title={showNewPassword ? "Hide password" : "Show password"}
+                    >
+                      {showNewPassword ? <FaLockOpen /> : <FaLock />}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="form-group">
@@ -168,6 +192,7 @@ const ForgotPasswordPage = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
+
               <PasswordPolicyHint />
 
               <button className="btn" onClick={handleChangePassword}>
@@ -180,9 +205,7 @@ const ForgotPasswordPage = () => {
 
       {/* Loading Spinner */}
       {loadingOtp && (
-        <div className="loading-overlay">
-          <div className="spinner"></div>
-        </div>
+        <CommonLoader overlay />
       )}
     </div>
   );

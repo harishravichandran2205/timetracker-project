@@ -1,6 +1,6 @@
 package com.ogon.timetracker.advices;
 
-import com.ogon.timetracker.exceptions.InvalidEmalDomainException;
+import com.ogon.timetracker.exceptions.InvalidEmailDomainException;
 import com.ogon.timetracker.exceptions.PasswordPolicyViolationException;
 import com.ogon.timetracker.exceptions.ResourceNotFoundException;
 import com.ogon.timetracker.exceptions.RuntimeConflictException;
@@ -98,8 +98,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ApiResponse<>(apiError), apiError.getStatus());
     }
 
-    @ExceptionHandler(InvalidEmalDomainException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidDomain(InvalidEmalDomainException ex) {
+    @ExceptionHandler(InvalidEmailDomainException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidDomain(InvalidEmailDomainException ex) {
 
         Map<String, String> error = new HashMap<>();
         error.put("message", ex.getMessage());

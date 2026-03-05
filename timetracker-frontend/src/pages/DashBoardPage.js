@@ -5,15 +5,18 @@ import TopHeader from "../components/TopHeader";
 import SideNav from "../components/SideNavigation";
 import API_BASE_URL from "../config/BackendApiConfig";
 import "./css/DashBoardPage.css";
+import CommonLoader from "../components/CommonLoader";
 
-import BillableNonBillablePie from "../components/BillableNonBillablePie";
+import ClientMonthlyEffortPie from "../components/ClientMonthlyEffortPie";
 import PreviousMonthWeeklyBar from "../components/PreviousMonthWeeklyBar";
+import MonthlyTicketEffortStack from "../components/MonthlyTicketEffortStack";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [currentRows, setCurrentRows] = useState([]);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [loadingCharts, setLoadingCharts] = useState(false);
 
   const pad2 = (n) => String(n).padStart(2, "0");
   const formatForBackend = (d) =>
@@ -43,6 +46,7 @@ const DashboardPage = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        setLoadingCharts(true);
         const token = localStorage.getItem("token");
         const email = localStorage.getItem("email");
 
@@ -61,6 +65,8 @@ const DashboardPage = () => {
         );
       } catch (err) {
         console.error("Dashboard fetch failed", err);
+      } finally {
+        setLoadingCharts(false);
       }
     };
 
@@ -106,13 +112,36 @@ const DashboardPage = () => {
           </div>
 
           <div className="dashboard-charts">
-            <BillableNonBillablePie rows={currentRows} />
-            <PreviousMonthWeeklyBar
-              rows={currentRows}
-              rangeStart={monthStart}
-              rangeEnd={monthEnd}
-              monthLabelOverride={monthLabel}
-            />
+            {loadingCharts ? (
+              <div className="dashboard-card dashboard-card--pie dashboard-card--loading">
+                <CommonLoader size="sm" />
+              </div>
+            ) : (
+              <ClientMonthlyEffortPie rows={currentRows} />
+            )}
+
+            {loadingCharts ? (
+              <div className="dashboard-card dashboard-card--bar dashboard-card--loading">
+                <CommonLoader size="md" />
+              </div>
+            ) : (
+              <PreviousMonthWeeklyBar
+                rows={currentRows}
+                rangeStart={monthStart}
+                rangeEnd={monthEnd}
+                monthLabelOverride={monthLabel}
+              />
+            )}
+          </div>
+
+          <div className="dashboard-charts">
+            {loadingCharts ? (
+              <div className="dashboard-card dashboard-card--ticket-stack dashboard-card--loading">
+                <CommonLoader size="md" />
+              </div>
+            ) : (
+              <MonthlyTicketEffortStack rows={currentRows} />
+            )}
           </div>
         </main>
       </div>

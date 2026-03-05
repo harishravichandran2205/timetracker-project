@@ -9,6 +9,7 @@ import com.ogon.timetracker.services.PasswordPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -146,5 +147,41 @@ public class UserController {
         response.put("message", "User not exists");
         return ResponseEntity.status(400).body(response);
 
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<Map<String, Object>> updateProfile(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        String firstName = request.get("firstName");
+        String lastName = request.get("lastName");
+
+        if (firstName == null || firstName.trim().isEmpty() || lastName == null || lastName.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "First name and last name are required.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        String loggedInEmail = authentication.getName();
+        Optional<User> optionalUser = userRepository.findByEmail(loggedInEmail);
+
+        if (optionalUser.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "User not found.");
+            return ResponseEntity.status(404).body(response);
+        }
+
+        User user = optionalUser.get();
+        user.setFirstName(firstName.trim());
+        user.setLastName(lastName.trim());
+        User updatedUser = userRepository.save(user);
+
+        response.put("success", true);
+        response.put("message", "Profile updated successfully.");
+        response.put("data", updatedUser);
+        return ResponseEntity.ok(response);
     }
 }

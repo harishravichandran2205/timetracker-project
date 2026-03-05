@@ -8,6 +8,7 @@ import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import CommonLoader from "./CommonLoader";
 
 const GetSummary = () => {
   const [searchBy, setSearchBy] = useState("client");
@@ -359,7 +360,7 @@ const GetSummary = () => {
             </div>
             <div className="action-row">
               <button className="btn primary-btn" onClick={handleSearch} disabled={loading}>
-                {loading ? "Searching..." : "Search"}
+                {loading ? <CommonLoader size="sm" /> : "Search"}
               </button>
               <button className="btn secondary-btn" onClick={downloadExcel}>
                 Download Excel
