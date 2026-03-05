@@ -62,8 +62,8 @@ const LoginPage = () => {
       navigate('/dashboard');
     } catch (err) {
       if (err.response) {
-        const errorMessage = err.response.data?.error?.message || 'Unknown error';
-        if (err.response.status === 500 || err.response.status === 400) {
+        const errorMessage = err.response.data?.data?.message || 'Unknown error';
+        if (err.response.status === 500 || err.response.status === 400 || err.response.status === 401 ) {
           setError(errorMessage);
         } else {
           setError('Something went wrong. Please try again.');
