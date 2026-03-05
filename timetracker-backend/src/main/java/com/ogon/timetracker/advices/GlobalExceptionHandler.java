@@ -121,7 +121,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
     public ResponseEntity<Object> handleUnauthorized(Exception ex) {
         Map<String, Object> body = new HashMap<>();
-        body.put("message", "Session expired or invalid token. Please log in again.");
+        String message = ex.getMessage() != null
+                ? ex.getMessage() : "Session expired or invalid token. Please log in again.";
+        body.put("message", message);
         body.put("status", HttpStatus.UNAUTHORIZED.value());
 
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);

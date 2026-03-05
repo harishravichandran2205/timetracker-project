@@ -73,7 +73,7 @@ public class AuthService {
 
             if (!passwordEncoder.matches(password, user.getPassword())) {
 
-                throw new BadCredentialsException("Invalid password for User : " + user.getEmail());
+                throw new BadCredentialsException("Invalid password for User");
             }
 
             String accessToken=jwtService.generateAccessToken(user);
