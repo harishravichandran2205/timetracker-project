@@ -17,4 +17,5 @@ public class AdminSummaryDTO {
     private double nonBillableHours;
 
     private Set<String> descriptions; // unique descriptions
+    private Set<String> effortDates;  // optional dates for export
 }
