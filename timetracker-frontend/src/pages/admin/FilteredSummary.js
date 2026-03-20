@@ -18,7 +18,11 @@ const FilteredSummary = () => {
    const emails = location.state?.emails || "";
   const rawResults = location.state?.results;
   console.log(rawResults);
-  const results = Array.isArray(rawResults.data) ? rawResults.data : [];
+  const results = Array.isArray(rawResults)
+    ? rawResults
+    : Array.isArray(rawResults?.data)
+    ? rawResults.data
+    : [];
 
   if (results.length === 0) {
     return <p style={{ padding: "20px" }}>No summary data available</p>;

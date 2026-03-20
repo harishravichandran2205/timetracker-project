@@ -317,7 +317,7 @@ const MyAccountPage = () => {
             </div>
           )}
           {loadingOtpRequest && (
-            <CommonLoader overlay size="sm" />
+            <CommonLoader overlay />
           )}
         </main>
       </div>

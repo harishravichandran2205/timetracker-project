@@ -4,6 +4,7 @@ import com.ogon.timetracker.dto.AdminSummaryDTO;
 import com.ogon.timetracker.dto.TaskDTO;
 import com.ogon.timetracker.entities.TaskEntity;
 import com.ogon.timetracker.rendererer.TimeTrackerRenderer;
+import com.ogon.timetracker.repositories.ClientRepository;
 import com.ogon.timetracker.repositories.TaskRepository;
 import com.ogon.timetracker.repositories.UserRepository;
 import com.ogon.timetracker.services.TaskService;
@@ -295,6 +296,7 @@ public class TaskController {
 
     private final TaskService taskService; // instance of TaskService
     private final UserRepository userRepository;
+    private final ClientRepository clientRepository;
 
     @GetMapping("/effort-entry-horizon")
     public  ResponseEntity<Map<String, Object>> getEffortEntries(
@@ -373,7 +375,9 @@ public class TaskController {
     public ResponseEntity<Map<String, Object>> getSummary(
             @RequestParam String email,
             @RequestParam String startDate,
-            @RequestParam String endDate
+            @RequestParam String endDate,
+            @RequestParam(required = false) String client,
+            @RequestParam(required = false) String project
     ) {
         if (email == null || email.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
@@ -398,6 +402,24 @@ public class TaskController {
                 startDt,
                 endDt
         );
+
+        if (client != null && !client.isBlank() && !"all".equalsIgnoreCase(client.trim())) {
+            String normalizedClient = client.trim();
+            tasks = tasks.stream()
+                    .filter(t -> normalizedClient.equalsIgnoreCase(
+                            Objects.toString(t.getClient(), "").trim()
+                    ))
+                    .collect(Collectors.toList());
+        }
+
+        if (project != null && !project.isBlank() && !"all".equalsIgnoreCase(project.trim())) {
+            String normalizedProject = project.trim();
+            tasks = tasks.stream()
+                    .filter(t -> normalizedProject.equalsIgnoreCase(
+                            Objects.toString(t.getProject(), "").trim()
+                    ))
+                    .collect(Collectors.toList());
+        }
 
         // Convert TaskEntity -> TaskDTO
         List<TaskDTO> result = tasks.stream()
@@ -520,6 +542,42 @@ public class TaskController {
 
         List<TaskEntity> tasks = new ArrayList<>();
 
+        boolean shouldCheckClient = "client".equalsIgnoreCase(searchBy) || "both".equalsIgnoreCase(searchBy);
+        boolean shouldCheckEmail = "email".equalsIgnoreCase(searchBy) || "both".equalsIgnoreCase(searchBy);
+
+        boolean clientExists = true;
+        if (shouldCheckClient) {
+            String clientInput = Objects.toString(client, "").trim();
+            if (clientInput.isBlank()) {
+                clientExists = false;
+            } else {
+                clientExists = clientRepository.existsByClientCd(clientInput.toUpperCase())
+                        || clientRepository.existsByClientName(clientInput);
+            }
+        }
+
+        List<Long> userIds = new ArrayList<>();
+        boolean emailExists = true;
+        if (shouldCheckEmail) {
+            userIds = taskRepository.findUserIdsByEmailIn(
+                    emails == null ? List.of() : emails
+            );
+            emailExists = !userIds.isEmpty();
+        }
+
+        if ("both".equalsIgnoreCase(searchBy) && !clientExists && !emailExists) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Entered client and user email not found"));
+        }
+        if (shouldCheckClient && !clientExists) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Entered client not found"));
+        }
+        if (shouldCheckEmail && !emailExists) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Entered user email not found"));
+        }
+
         // ===== Fetch Data =====
         if ("client".equalsIgnoreCase(searchBy)) {
 
@@ -528,33 +586,71 @@ public class TaskController {
             );
 
         } else if ("email".equalsIgnoreCase(searchBy)) {
-
-            List<Long> userIds =
-                    taskRepository.findUserIdsByEmailIn(emails);
-
-            if (!userIds.isEmpty()) {
-                tasks = taskRepository.findByUserIdsAndDateBetweenString(
-                        userIds, startDt, endDt
-                );
-            }
+            tasks = taskRepository.findByUserIdsAndDateBetweenString(
+                    userIds, startDt, endDt
+            );
 
         } else if ("both".equalsIgnoreCase(searchBy)) {
-
-            List<Long> userIds =
-                    taskRepository.findUserIdsByEmailIn(emails);
-
-            if (!userIds.isEmpty()) {
-                tasks = taskRepository.getSummaryByClientAndUserIdsAndDateRange(
-                        client, userIds, startDt, endDt
-                );
-            }
+            tasks = taskRepository.getSummaryByClientAndUserIdsAndDateRange(
+                    client, userIds, startDt, endDt
+            );
         }
-        List<AdminSummaryDTO> summary = buildSummaryData(tasks);
+        List<AdminSummaryDTO> summary = buildSummaryData(tasks, false);
 
 
         return ResponseEntity.ok(Map.of("data", summary));
     }
-    private List<AdminSummaryDTO> buildSummaryData(List<TaskEntity> tasks) {
+
+    @PostMapping("tasks/summary-consolidated")
+    public ResponseEntity<Map<String, Object>> getSummaryConsolidated(
+            @RequestBody Map<String, Object> payload
+    ) {
+        String email = (String) payload.get("email");
+        String client = (String) payload.get("client");
+        String project = (String) payload.get("project");
+        String startDate = (String) payload.get("startDate");
+        String endDate = (String) payload.get("endDate");
+        Boolean includeDates = (Boolean) payload.getOrDefault("includeDates", false);
+
+        if (email == null || email.isBlank() || startDate == null || endDate == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid request"));
+        }
+
+        LocalDate startDt = LocalDate.parse(startDate, dbFormatter);
+        LocalDate endDt = LocalDate.parse(endDate, dbFormatter);
+
+        List<Long> userIds = taskRepository.findUserIdsByEmailIn(List.of(email));
+        if (userIds.isEmpty()) {
+            return ResponseEntity.ok(Map.of("data", List.of()));
+        }
+
+        List<TaskEntity> tasks = taskRepository.findByUserIdsAndDateBetweenString(
+                userIds, startDt, endDt
+        );
+
+        if (client != null && !client.isBlank() && !"all".equalsIgnoreCase(client.trim())) {
+            String normalizedClient = client.trim();
+            tasks = tasks.stream()
+                    .filter(t -> normalizedClient.equalsIgnoreCase(
+                            Objects.toString(t.getClient(), "").trim()
+                    ))
+                    .collect(Collectors.toList());
+        }
+
+        if (project != null && !project.isBlank() && !"all".equalsIgnoreCase(project.trim())) {
+            String normalizedProject = project.trim();
+            tasks = tasks.stream()
+                    .filter(t -> normalizedProject.equalsIgnoreCase(
+                            Objects.toString(t.getProject(), "").trim()
+                    ))
+                    .collect(Collectors.toList());
+        }
+
+        List<AdminSummaryDTO> summary = buildSummaryData(tasks, Boolean.TRUE.equals(includeDates));
+        return ResponseEntity.ok(Map.of("data", summary));
+    }
+
+    private List<AdminSummaryDTO> buildSummaryData(List<TaskEntity> tasks, boolean includeDates) {
 
         Map<String, AdminSummaryDTO> map = new LinkedHashMap<>();
 
@@ -580,6 +676,7 @@ public class TaskController {
                         .billableHours(0)
                         .nonBillableHours(0)
                         .descriptions(new HashSet<>())
+                        .effortDates(includeDates ? new HashSet<>() : null)
                         .build();
 
                 map.put(key, summary);
@@ -595,6 +692,10 @@ public class TaskController {
 
             if (task.getDescription() != null && !task.getDescription().isBlank()) {
                 summary.getDescriptions().add(task.getDescription().trim());
+            }
+
+            if (includeDates && task.getDate() != null && !task.getDate().isBlank()) {
+                summary.getEffortDates().add(task.getDate().trim());
             }
         }
 

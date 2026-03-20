@@ -22,11 +22,12 @@
 }
 
 .action-row {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-top: 16px;
-    margin-left: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 16px;
+  margin-left: 0;
+  flex-wrap: wrap;
 }
 
 .btn {
@@ -43,10 +44,11 @@
 }
 
 /* ===== DATE RANGE PICKERS ===== */
-.date-range-container {
+.get-summary-page .date-range-container {
   margin-bottom: 20px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
   font-size: 16px;
 }
@@ -99,10 +101,87 @@
   resize: none;
 }
 
+.get-summary-page .filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
 /* WIDTH CONTROL */
-.input-small { width: 240px; }
-.input-large { width: 360px; }
-.input-date  { width: 160px; }
+.input-small {
+  flex: 0 0 240px;
+  width: 240px;
+}
+
+.input-large {
+  flex: 1 1 360px;
+  min-width: 320px;
+  max-width: 480px;
+}
+
+.input-date  {
+  flex: 0 0 210px;
+  width: 210px;
+}
+
+.get-summary-page .filter-grid .input-date + .input-date {
+  margin-left: 4px;
+}
+
+.get-summary-page .action-row {
+  justify-content: flex-start;
+}
+
+.summary-ui-msg-wrap {
+  width: 100%;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.summary-ui-msg {
+  margin: 0 0 10px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.summary-ui-msg--error {
+  background: #fde7e7;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.summary-ui-msg--info {
+  background: #e8f1ff;
+  color: #0f56b7;
+  border: 1px solid #b9d0f8;
+}
+
+@media (max-width: 1280px) {
+  .input-large {
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .input-small,
+  .input-large,
+  .input-date {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .get-summary-page .filter-grid .input-date + .input-date {
+    margin-left: 0;
+  }
+}
 
 
 

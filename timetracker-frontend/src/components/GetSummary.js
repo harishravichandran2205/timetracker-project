@@ -67,16 +67,70 @@ const GetSummary = () => {
     return `Effort summary_${datePart}`;
   };
 
+  const parseEmails = (emailsInput) =>
+    String(emailsInput || "")
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean);
+
+  const extractSummaryRows = (res) => {
+    if (Array.isArray(res?.data?.data?.data)) return res.data.data.data;
+    if (Array.isArray(res?.data?.data)) return res.data.data;
+    return [];
+  };
+
+  const extractApiError = (err, fallback) =>
+    (() => {
+      const raw =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.data?.error ||
+        err?.response?.data?.data?.message ||
+        fallback;
+      if (typeof raw === "string") return raw;
+      if (raw && typeof raw === "object" && typeof raw.message === "string") {
+        return raw.message;
+      }
+      return fallback;
+    })();
+
+  const validateInputsForDownload = () => {
+    if (searchBy === "client" && !client.trim()) {
+      return "Please enter client name";
+    }
+    if (searchBy === "email" && !emails.trim()) {
+      return "Please enter at least one email";
+    }
+    if (searchBy === "both" && (!client.trim() || !emails.trim())) {
+      return "Please enter both client and email";
+    }
+    if (!startDate || !endDate) {
+      return "Please select start and end dates";
+    }
+    return "";
+  };
+
 
 
   const downloadExcel = async () => {
     try {
+      setError("");
+      setInfoMsg("");
+      const validationError = validateInputsForDownload();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
       const token = localStorage.getItem("token");
+      if (!token) {
+        setError("You are not logged in");
+        return;
+      }
 
       const payload = {
         searchBy,
         client,
-        emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+        emails: parseEmails(emails),
         startDate: formatForBackend(startDate),
         endDate: formatForBackend(endDate),
         exportAll: true
@@ -87,13 +141,15 @@ const GetSummary = () => {
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const summaryData =Array.isArray(res.data?.data?.data)
-                                ? res.data.data.data
-                                : [];
+      const summaryData = extractSummaryRows(res);
+      if (summaryData.length === 0) {
+        setInfoMsg("No effort records found for entered criteria");
+        return;
+      }
       generateExcel(summaryData);
 
     } catch (err) {
-      alert("Failed to download Excel");
+      setError(extractApiError(err, "Failed to download Excel"));
     }
   };
 
@@ -148,19 +204,28 @@ const GetSummary = () => {
 
   const downloadPDF = async () => {
     try {
+      setError("");
+      setInfoMsg("");
+      const validationError = validateInputsForDownload();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
       const token = localStorage.getItem("token");
-      console.log("Token:", token);
+      if (!token) {
+        setError("You are not logged in");
+        return;
+      }
 
       const payload = {
         searchBy,
         client,
-        emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+        emails: parseEmails(emails),
         startDate: formatForBackend(startDate),
         endDate: formatForBackend(endDate),
         exportAll: true
       };
 
-      console.log("PDF Payload:", payload);
 
       const res = await axios.post(
         `${API_BASE_URL}/api/admin-panel/search`,
@@ -168,21 +233,18 @@ const GetSummary = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("PDF API Response:", res);
 
-      const summaryData = Array.isArray(res.data?.data?.data)
-        ? res.data.data.data
-        : [];
+      const summaryData = extractSummaryRows(res);
+      if (summaryData.length === 0) {
+        setInfoMsg("No effort records found for entered criteria");
+        return;
+      }
 
-      console.log("PDF Data Length:", summaryData.length);
 
       generatePDF(summaryData);
 
     } catch (err) {
-      console.error("PDF Download Error:", err);
-      console.error("Response:", err?.response);
-      console.error("Message:", err?.message);
-      alert("Failed to download PDF");
+      setError(extractApiError(err, "Failed to download PDF"));
     }
   };
 
@@ -274,10 +336,12 @@ const GetSummary = () => {
     setLoading(true);
 
     try {
+      const emailList = parseEmails(emails);
+
       const payload = {
         searchBy,
         client,
-        emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+        emails: emailList,
         startDate: formatForBackend(startDate),
         endDate: formatForBackend(endDate)
       };
@@ -288,9 +352,8 @@ const GetSummary = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const summaryData = res?.data?.data || [];
+      const summaryData = extractSummaryRows(res);
 
-      console.log("Summary Data:", summaryData);
 
      if (summaryData.length === 0) {
        setInfoMsg("No effort records found for entered criteria");
@@ -299,7 +362,7 @@ const GetSummary = () => {
 
      navigate("/admin/filtered-summary", {
        state: { results: summaryData,
-       emails: emails.split(",").map(e => e.trim()).filter(Boolean),
+       emails: emailList,
         startDate: formatForBackend(startDate),
          endDate: formatForBackend(endDate),
          searchBy : searchBy,
@@ -307,7 +370,7 @@ const GetSummary = () => {
          }
      });
     } catch (err) {
-      setError("Failed to fetch summary");
+      setError(extractApiError(err, "Failed to fetch summary"));
     } finally {
       setLoading(false);
     }
@@ -369,6 +432,10 @@ const GetSummary = () => {
                  Download PDF
               </button>
             </div>
+       </div>
+       <div className="summary-ui-msg-wrap">
+         {error && <div className="summary-ui-msg summary-ui-msg--error">{String(error)}</div>}
+         {infoMsg && <div className="summary-ui-msg summary-ui-msg--info">{infoMsg}</div>}
        </div>
       </div>
     </div>

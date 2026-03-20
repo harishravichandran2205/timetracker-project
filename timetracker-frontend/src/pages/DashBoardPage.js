@@ -82,27 +82,22 @@ const DashboardPage = () => {
 
         <main className="page-content">
           <h2 className="page-title">Dashboard</h2>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginTop: 12,
-            }}
-          >
+          <div className="dashboard-month-nav">
             <button
               type="button"
-              className="btn"
+              className="btn dashboard-month-btn"
               onClick={() => setMonthOffset((v) => v - 1)}
             >
               &lt;
             </button>
-            <h4 style={{ margin: 0, textAlign: "center" }}>
+            <h4 className="dashboard-month-title">
               {monthLabel} – Effort Summary
             </h4>
             <button
               type="button"
-              className="btn"
+              className={`btn dashboard-month-btn ${
+                monthOffset >= 0 ? "dashboard-month-btn--disabled" : ""
+              }`}
               onClick={() => setMonthOffset((v) => v + 1)}
               disabled={monthOffset >= 0}
               title={monthOffset >= 0 ? "Cannot view future months" : ""}
